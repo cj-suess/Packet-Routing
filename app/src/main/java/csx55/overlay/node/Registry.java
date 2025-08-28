@@ -1,14 +1,12 @@
 package csx55.overlay.node;
 
+import csx55.overlay.wireformats.Event;
+
 public class Registry implements Node {
 
-    int id;
+    
 
-    public Registry(int id) {
-        this.id = id;
-    }
+    public void onEvent(Event event) {
 
-    public void printRegistry() {
-        System.out.println("REGISTRY");
     }
 }
