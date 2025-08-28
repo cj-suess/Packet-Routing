@@ -3,14 +3,11 @@
  */
 package csx55.overlay;
 
-import csx55.overlay.node.Registry;
-
 public class App {
 
     public static void main(String[] args) {
 
-        Registry reg = new Registry();
-        reg.registerStart();
+        System.out.println("APP CLASS");
 
     }
 }
