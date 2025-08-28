@@ -8,8 +8,9 @@ import csx55.overlay.node.Registry;
 public class App {
 
     public static void main(String[] args) {
-        Registry reg = new Registry(3);
-        reg.printRegistry();
-        System.out.println("APP");
+
+        Registry reg = new Registry();
+        reg.registerStart();
+
     }
 }
