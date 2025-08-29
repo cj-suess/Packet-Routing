@@ -1,5 +1,5 @@
 package csx55.overlay.wireformats;
 
-public class MessagingNodesList {
+public class MessagingNodesList implements Event {
     
 }

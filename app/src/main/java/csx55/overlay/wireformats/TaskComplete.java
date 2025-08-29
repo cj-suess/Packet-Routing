@@ -1,5 +1,5 @@
 package csx55.overlay.wireformats;
 
-public class TaskComplete {
+public class TaskComplete implements Event {
     
 }

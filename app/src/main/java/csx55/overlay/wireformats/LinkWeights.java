@@ -1,5 +1,5 @@
 package csx55.overlay.wireformats;
 
-public class LinkWeights {
+public class LinkWeights implements Event {
     
 }

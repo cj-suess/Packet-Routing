@@ -21,7 +21,7 @@ public class Registry implements Node {
         try {
             SS = new ServerSocket(PORT); // take from stdin
             PORT = SS.getLocalPort();
-            System.out.println("Registry is up and running. Listening on port: " + PORT);
+            System.out.println("Registry is up and running. Listening on port: " + PORT + "\n\n");
             
             while(true) {
                 Socket socket = SS.accept();
@@ -46,7 +46,7 @@ public class Registry implements Node {
         @Override
         public void run(){
             try {
-                System.out.println("Messaging node running in registry thread...");
+                System.out.println("Messaging node running in registry thread...\n");
             } catch(Exception e) {
                 System.out.println("Exception with messaging node in registry thread... " + e.getLocalizedMessage());
             }
