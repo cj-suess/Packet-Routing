@@ -1,7 +1,6 @@
 package csx55.overlay.wireformats;
 
-public class Message implements Protocol {
+public class Message {
     
     
-
 }

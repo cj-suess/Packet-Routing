@@ -2,59 +2,54 @@ package csx55.overlay.node;
 
 import java.net.*;
 import java.io.*;
+
+import csx55.overlay.transport.TCPReceiverThread;
+import csx55.overlay.transport.TCPSender;
+import csx55.overlay.transport.TCPServerThread;
 import csx55.overlay.wireformats.Event;
 
 public class Registry implements Node {
 
-    private ServerSocket SS;
-    private int PORT;
+    public int port;
+    public ServerSocket serverSocket;
+    TCPServerThread st;
 
-    public Registry(int PORT) {
-        this.PORT = PORT;
+    public Registry(int port) {
+        this.port = port;
     }
 
     public void onEvent(Event event) {
 
+        // if Event == Register_Request
+        if(event.getType() == 0) {
+
+        }
+            // check if messaging node is registered and register if not
+            // respond according to success/failure of registering
+        // if Event == Deregister_Request
+            // remove the messaging node from the registry
+            // respond accordingly 
+
     }
 
-    public void nodeStart() {
-        try {
-            SS = new ServerSocket(PORT); // take from stdin
-            PORT = SS.getLocalPort();
-            System.out.println("Registry is up and running. Listening on port: " + PORT + "\n\n");
-            
+    public void startRegistry() {
+        try{
+            serverSocket = new ServerSocket(port);
+            System.out.println("Registry is up and running. Listening on port: " + port);
+
             while(true) {
-                Socket socket = SS.accept();
-                System.out.println("New messaging node connected...\n" + "Local Port: " + socket.getLocalPort() + "\n" + "Remote Port: " + socket.getPort());
-                NodeHandler NH = new NodeHandler(socket);
-                new Thread(NH).start();
+                Socket socket = serverSocket.accept();
+                System.out.println("New connection from: " + socket.getInetAddress());
+                st = new TCPServerThread(socket);
+                new Thread(st).start();
             }
-
         } catch(IOException e) {
-            System.out.println(e.getMessage());
-        }
-    }
-
-    public class NodeHandler implements Runnable {
-
-        private Socket CS;
-
-        public NodeHandler(Socket CS) {
-            this.CS = CS;
-        }
-
-        @Override
-        public void run(){
-            try {
-                System.out.println("Messaging node running in registry thread...\n");
-            } catch(Exception e) {
-                System.out.println("Exception with messaging node in registry thread... " + e.getLocalizedMessage());
-            }
+            System.out.println("Exception while starting registry node..." + e.getMessage());
         }
     }
 
     public static void main(String[] args) {
         Registry reg = new Registry(Integer.parseInt(args[0]));
-        reg.nodeStart();
+        reg.startRegistry();
     }
 }

@@ -1,13 +1,8 @@
 package csx55.overlay.wireformats;
 
+import java.io.IOException;
+
 public interface Event {
-
-    private int getType() {
-        return 0;
-    }
-
-    private byte[] getBytes() {
-        return new byte[1];
-    }
-    
+    int getType();
+    byte[] getBytes() throws IOException;
 }

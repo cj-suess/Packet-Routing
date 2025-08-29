@@ -10,7 +10,8 @@ public class Deregister implements Event {
     String ip;
     int port;
 
-    private byte[] getBytes() throws IOException{
+    @Override
+    public byte[] getBytes() throws IOException{
         byte[] encodedData = null;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dout = new DataOutputStream(baos);
@@ -28,6 +29,11 @@ public class Deregister implements Event {
         baos.close();
         dout.close();
         return encodedData;
+    }
+
+    @Override
+    public int getType() {
+        return 2;
     }
     
 }

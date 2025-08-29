@@ -1,85 +1,67 @@
 package csx55.overlay.node;
 
-import csx55.overlay.wireformats.Event;
+import csx55.overlay.transport.TCPReceiverThread;
+import csx55.overlay.transport.TCPSender;
+import csx55.overlay.transport.TCPServerThread;
+import csx55.overlay.wireformats.*;
 import java.io.IOException;
 import java.net.*;
 
 public class MessagingNode implements Node {
 
-    private static ServerSocket SS;
-    private Socket CS;
-    private static int SP;
-    private int CP;
-    private String HOST;
+    String hostname;
+    int port;
 
-    public MessagingNode(String HOST, int CP) {
-        this.HOST = HOST;
-        this.CP = CP;
+    ServerSocket serverSocket;
+    int serverPort;
+    TCPServerThread st;
+    Socket socket;
+
+
+    public MessagingNode(String hostname, int port) {
+        this.hostname = hostname;
+        this.port = port;
     }
 
     public void onEvent(Event event) {
-
+        // if event == Register
+        if(event.getType() == 0) {
+            // send register request to registry
+        }
+        // if event == Deregister
+            // send deregister request to registry
     }
 
-    public void nodeStart() {
+    public void startNode() {
         try {
-                SS = new ServerSocket(0); // spin up registry with automatically configured port number
-                SP = SS.getLocalPort();
-                System.out.println("Messaging node is up and running. Listening on port: " + SP);
-                
-                while(true) {
-                    Socket socket = SS.accept();
-                    System.out.println("New messaging node connected...\n" + "Local Port: " + socket.getLocalPort() + "\n" + "Remote Port: " + socket.getPort());
-                }
-            } catch(IOException e) {
-                System.out.println(e.getMessage());
+            serverSocket = new ServerSocket(0);
+            serverPort = serverSocket.getLocalPort();
+            System.out.println("Messaging node is up and running. Listening on port: " + serverPort);
+
+            while(true) {
+                Socket socket = serverSocket.accept();
+                System.out.println("New connection on messaging node from: " + socket.getInetAddress());
+                st = new TCPServerThread(socket);
+                new Thread(st).start();
             }
-    }
-
-    // public void connectToMessagingNode(String hostname, int serverPort) {
-    //     try{
-    //         Socket clientSocket = new Socket(hostname, serverPort);
-    //         System.out.println("Connected to other messaging node...\n" + "Using port: " + serverPort);
-    //         System.out.println("Server Port : " + clientSocket.getPort() + "\n" + "Local Port: " + clientSocket.getLocalPort());
-    //     } catch(IOException e) {
-    //         System.out.println("Exception while connecting to other messaging node..." + e.getLocalizedMessage());
-    //     }
-    // }
-
-    public void connectToRegistery() {
-        try{
-            CS = new Socket(HOST, CP);
-            System.out.println("Connected to registry...\n" + "Using port: " + CP);
-            System.out.println("Server Port : " + CS.getPort() + "\n" + "Local Port: " + CS.getLocalPort());
         } catch(IOException e) {
-            System.out.println("Exception while connecting to registry..." + e.getLocalizedMessage());
+            System.out.println("Exception while starting messaging node..." + e.getMessage());
         }
     }
 
-    public class NodeHandler implements Runnable {
-        
-        private Socket CS;
-
-        public NodeHandler(Socket CS) {
-            this.CS = CS;
+    public void register() {
+        try {
+            socket = new Socket(hostname, port);
+            System.out.println("Connected to registry...");
+        } catch (Exception e) {
+            e.getMessage();
         }
-
-        @Override
-        public void run(){
-            try {
-                System.out.println("Messaging node running in messaging thread...");
-            } catch(Exception e) {
-                System.out.println("Exception with messaging node in messaging thread... " + e.getLocalizedMessage());
-            }
-        }
-
     }
 
     public static void main(String[] args) {
-        MessagingNode MN = new MessagingNode(args[0], Integer.parseInt(args[1]));
-        Thread thread = new Thread(MN::nodeStart);
-        thread.start();
-        MN.connectToRegistery();
+        MessagingNode node = new MessagingNode(args[0], Integer.parseInt(args[1]));
+        new Thread(node::startNode).start();
+        node.register();
     }
     
 }
