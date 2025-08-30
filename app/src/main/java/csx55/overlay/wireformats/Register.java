@@ -28,7 +28,7 @@ public class Register implements Event, Protocol {
         dout.writeInt(ipLength);
         dout.write(ipBytes);
 
-        dout.write(port);
+        dout.writeInt(port);
         dout.flush();
         encodedData = baos.toByteArray();
         
@@ -39,17 +39,7 @@ public class Register implements Event, Protocol {
 
     @Override
     public int getType() {
-        return 0;
-    }
-
-    public static void main(String[] args) {
-        Register register = new Register(REGISTER_REQUEST, "grouper", 5000);
-        try {
-            byte[] packedData = register.getBytes();
-            System.out.println(packedData);
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-        }
+        return Protocol.REGISTER_REQUEST;
     }
     
 }
