@@ -19,11 +19,11 @@ public class TCPServerThread implements Runnable {
     public void run() {
         try {
 
-            System.out.println("New TCP Connection thread created...\n" + 
-                                "Local Port: " + socket.getLocalPort() + "\n" + 
-                                "Remote Port: " + socket.getPort() + "\n");
+            System.out.println("[TCPServerThread] New TCP Connection thread created...\n" + 
+                                "[TCPServerThread] Local Port: " + socket.getLocalPort() + "\n" + 
+                                "[TCPServerThread] Remote Port: " + socket.getPort() + "\n");
             sender = new TCPSender(socket);
-            receiver = new TCPReceiverThread(socket, node);
+            receiver = new TCPReceiverThread(socket, node, sender);
             new Thread(receiver).start();
         } catch (Exception e) {
             System.out.println(e.getLocalizedMessage());

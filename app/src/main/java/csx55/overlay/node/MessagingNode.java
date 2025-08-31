@@ -4,8 +4,6 @@ import csx55.overlay.transport.TCPReceiverThread;
 import csx55.overlay.transport.TCPSender;
 import csx55.overlay.transport.TCPServerThread;
 import csx55.overlay.wireformats.*;
-
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.*;
 
@@ -24,47 +22,44 @@ public class MessagingNode implements Node {
         this.port = port;
     }
 
-    public void onEvent(Event event) {
-        System.out.println("Event received: " + event.getType());
-        // if event == Register
+    public void onEvent(Event event, TCPSender sender) {
         if(event.getType() == Protocol.REGISTER_RESPONSE) {
-            // send register request to registry
+            Message message = (Message) event; // downcast back to Message
+            System.out.println(message.info);
         }
-        // if event == Deregister
-            // send deregister request to registry
     }
 
     public void startNode() {
         try {
             serverSocket = new ServerSocket(0);
             serverPort = serverSocket.getLocalPort();
-            System.out.println("Messaging node is up and running. Listening on port: " + serverPort);
+            System.out.println("[MessagingNode] Messaging node is up and running. Listening on port: " + serverPort);
 
             while(true) {
                 Socket socket = serverSocket.accept();
-                System.out.println("New connection on messaging node from: " + socket.getInetAddress());
+                System.out.println("[MessagingNode] New connection on messaging node from: " + socket.getInetAddress());
                 TCPServerThread st = new TCPServerThread(socket, this);
                 new Thread(st).start();
             }
         } catch(IOException e) {
-            System.out.println("Exception while starting messaging node..." + e.getMessage());
+            System.out.println("[MessagingNode] Exception while starting messaging node..." + e.getMessage());
         }
     }
 
     public void register() {
         try {
             socket = new Socket(hostname, port);
-            System.out.println("Connecting to registry...\n" + "Local Port: " + socket.getLocalPort() +"\n" + "Remote Port: " + port);
+            System.out.println("[MessagingNode] Connecting to registry...\n" + "[MessagingNode] Local Port: " + socket.getLocalPort() +"\n" + "[MessagingNode] Remote Port: " + port);
             // create register request instance
             Register registerRequest = new Register(Protocol.REGISTER_REQUEST, socket.getLocalAddress().getHostAddress(), serverPort);
-            // create receiving thread for response?
-            TCPReceiverThread receiver = new TCPReceiverThread(socket, this);
-            new Thread(receiver).start();
             // create sender instance to send register request
             TCPSender sender = new TCPSender(socket);
+            // create receiving thread for response?
+            TCPReceiverThread receiver = new TCPReceiverThread(socket, this, sender);
+            new Thread(receiver).start();
             sender.sendData(registerRequest.getBytes());
         } catch (IOException e) {
-            System.out.println("Exception while registering node with registry...");
+            System.out.println("[MessagingNode] Exception while registering node with registry...");
         }
     }
 
