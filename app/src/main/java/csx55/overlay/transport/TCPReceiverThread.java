@@ -36,6 +36,7 @@ public class TCPReceiverThread implements Runnable {
                 break;
             } catch(IOException ioe) {
                 System.out.println("IO exception caught reading data..." + ioe.getMessage());
+                break;
             } 
         }
 
