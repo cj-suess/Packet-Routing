@@ -35,7 +35,7 @@ public class Registry implements Node {
             } 
                 // add another check for node.ip matching ip of request?
         }
-
+        printRegistry();
     }
 
     public void startRegistry() {
@@ -56,12 +56,12 @@ public class Registry implements Node {
     }
 
     public void printRegistry() {
+        System.out.println(nodeMap.size());
         nodeMap.forEach((key, value) -> System.out.println(key+":"+value));
     }
 
     public static void main(String[] args) {
         Registry reg = new Registry(Integer.parseInt(args[0]));
         new Thread(reg::startRegistry).start();
-        reg.printRegistry();
     }
 }
