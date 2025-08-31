@@ -1,6 +1,7 @@
 package csx55.overlay.node;
 
 import java.net.*;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.io.*;
 
@@ -12,30 +13,26 @@ public class Registry implements Node {
     public int port;
     public ServerSocket serverSocket;
 
-    ConcurrentHashMap<String, Integer> nodeMap;
+    Set<String> registeredNodes;
 
 
     public Registry(int port) {
         this.port = port;
-        nodeMap = new ConcurrentHashMap<>();
+        registeredNodes = ConcurrentHashMap.newKeySet(); // should work better using a single String?
     }
 
     public void onEvent(Event event) {
-
-        // if Event == Register_Request
         if(event.getType() == Protocol.REGISTER_REQUEST) {
-            Register node = (Register) event;
-            // perform checks
-            if(nodeMap.get(node.ip) == null) {
-                // add to the map and respond with success and number of nodes in the map
-                System.out.println("Adding node to map...");
-                nodeMap.put(node.ip, node.port);
-            } else if(nodeMap.get(node.ip) == node.port) {
-                // respond with failure due to existing duplicate entry
-            } 
-                // add another check for node.ip matching ip of request?
+            Register node = (Register) event; // downcast back to Register
+            String nodeEntry = node.ip + ":" + node.port;
+            if(registeredNodes.add(nodeEntry)) {
+                // change to message sent to messaging node
+                System.out.printf("Registration request successful. The number of messaging nodes currently constituting the overlay is %d.", registeredNodes.size());
+            } else {
+                // change to message sent to messaging node
+                System.err.println("[Error] A node with the same IP address and port already is registered...");
+            }
         }
-        printRegistry();
     }
 
     public void startRegistry() {
@@ -56,8 +53,8 @@ public class Registry implements Node {
     }
 
     public void printRegistry() {
-        System.out.println(nodeMap.size());
-        nodeMap.forEach((key, value) -> System.out.println(key+":"+value));
+        System.out.println("Number of nodes currently in registry: " + registeredNodes.size());
+        registeredNodes.forEach(key -> System.out.println(key));
     }
 
     public static void main(String[] args) {
