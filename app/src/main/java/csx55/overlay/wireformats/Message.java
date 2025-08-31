@@ -6,9 +6,9 @@ import java.io.IOException;
 
 public class Message implements Event {
     
-    int messageType;
-    byte statusCode;
-    String info;
+    public int messageType;
+    public byte statusCode;
+    public String info;
 
     public Message(int messageType, byte statusCode, String info) {
         this.messageType = messageType;

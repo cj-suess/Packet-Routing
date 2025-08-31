@@ -23,13 +23,10 @@ public class MessagingNode implements Node {
     }
 
     public void onEvent(Event event, TCPSender sender) {
-        System.out.println("Event received: " + event.getType());
-        // if event == Register
         if(event.getType() == Protocol.REGISTER_RESPONSE) {
-            // send register request to registry
+            Message message = (Message) event; // downcast back to Message
+            System.out.println(message.info);
         }
-        // if event == Deregister
-            // send deregister request to registry
     }
 
     public void startNode() {
