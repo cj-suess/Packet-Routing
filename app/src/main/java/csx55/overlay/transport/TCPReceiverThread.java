@@ -13,10 +13,12 @@ public class TCPReceiverThread implements Runnable {
     private Socket socket;
     private DataInputStream din;
     private Node node;
+    private TCPSender sender;
 
-    public TCPReceiverThread(Socket socket, Node node) throws IOException {
+    public TCPReceiverThread(Socket socket, Node node, TCPSender sender) throws IOException {
         this.socket = socket;
         this.node = node;
+        this.sender = sender;
         din = new DataInputStream(socket.getInputStream());
     }
 
@@ -30,7 +32,7 @@ public class TCPReceiverThread implements Runnable {
                 // pass data to EventFactory
                 EventFactory ef = new EventFactory(data);
                 Event decodedEvent = ef.createEvent();
-                node.onEvent(decodedEvent);
+                node.onEvent(decodedEvent, sender);
             } catch(SocketException soe) {
                 System.out.println("Socket exception caught reading data..." + soe.getMessage());
                 break;

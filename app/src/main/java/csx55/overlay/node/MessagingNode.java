@@ -4,8 +4,6 @@ import csx55.overlay.transport.TCPReceiverThread;
 import csx55.overlay.transport.TCPSender;
 import csx55.overlay.transport.TCPServerThread;
 import csx55.overlay.wireformats.*;
-
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.*;
 
@@ -24,7 +22,7 @@ public class MessagingNode implements Node {
         this.port = port;
     }
 
-    public void onEvent(Event event) {
+    public void onEvent(Event event, TCPSender sender) {
         System.out.println("Event received: " + event.getType());
         // if event == Register
         if(event.getType() == Protocol.REGISTER_RESPONSE) {
@@ -57,11 +55,11 @@ public class MessagingNode implements Node {
             System.out.println("Connecting to registry...\n" + "Local Port: " + socket.getLocalPort() +"\n" + "Remote Port: " + port);
             // create register request instance
             Register registerRequest = new Register(Protocol.REGISTER_REQUEST, socket.getLocalAddress().getHostAddress(), serverPort);
-            // create receiving thread for response?
-            TCPReceiverThread receiver = new TCPReceiverThread(socket, this);
-            new Thread(receiver).start();
             // create sender instance to send register request
             TCPSender sender = new TCPSender(socket);
+            // create receiving thread for response?
+            TCPReceiverThread receiver = new TCPReceiverThread(socket, this, sender);
+            new Thread(receiver).start();
             sender.sendData(registerRequest.getBytes());
         } catch (IOException e) {
             System.out.println("Exception while registering node with registry...");

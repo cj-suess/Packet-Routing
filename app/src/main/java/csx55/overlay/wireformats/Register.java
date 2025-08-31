@@ -41,17 +41,4 @@ public class Register implements Event, Protocol {
     public int getType() {
         return Protocol.REGISTER_REQUEST;
     }
-
-    public int getMessageType() {
-        return messageType;
-    }
-
-    public String getIp() {
-        return ip;
-    }
-
-    public int getPort() {
-        return port;
-    }
-    
 }

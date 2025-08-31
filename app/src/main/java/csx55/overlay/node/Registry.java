@@ -21,17 +21,22 @@ public class Registry implements Node {
         registeredNodes = ConcurrentHashMap.newKeySet(); // should work better using a single String?
     }
 
-    public void onEvent(Event event) {
-        if(event.getType() == Protocol.REGISTER_REQUEST) {
-            Register node = (Register) event; // downcast back to Register
-            String nodeEntry = node.ip + ":" + node.port;
-            if(registeredNodes.add(nodeEntry)) {
-                // change to message sent to messaging node
-                System.out.printf("Registration request successful. The number of messaging nodes currently constituting the overlay is %d.", registeredNodes.size());
-            } else {
-                // change to message sent to messaging node
-                System.err.println("[Error] A node with the same IP address and port already is registered...");
+    public void onEvent(Event event, TCPSender sender) {
+        try {
+            if(event.getType() == Protocol.REGISTER_REQUEST) {
+                Register node = (Register) event; // downcast back to Register
+                String nodeEntry = node.ip + ":" + node.port;
+                if(registeredNodes.add(nodeEntry)) {
+                    String info = "Registration request successful. The number of messaging nodes currently constituting the overlay is (" + registeredNodes.size() + ")";
+                    Message successMessage = new Message(Protocol.REGISTER_RESPONSE, (byte)0, info);
+                    sender.sendData(successMessage.getBytes());
+                } else {
+                    // change to message sent to messaging node
+                    System.err.println("[Error] A node with the same IP address and port already is registered...");
+                }
             }
+        } catch(IOException e) {
+            System.err.println("Exception in registery while handling an event...");
         }
     }
 
