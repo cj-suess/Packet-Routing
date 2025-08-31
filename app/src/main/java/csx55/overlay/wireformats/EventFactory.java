@@ -21,10 +21,12 @@ public class EventFactory {
             DataInputStream dis = new DataInputStream(bais);
             messageType = dis.readInt();
 
+            System.out.println("[EventFactory] New event being created...");
+
             switch (messageType) {
                 case Protocol.REGISTER_REQUEST:
                     // decode data into Register event
-                    System.out.println("Decoding data into a Register object...");
+                    System.out.println("[EventFactory] Decoding data into a Register object...");
                     String ip;
                     int port;
                     int ipLength = dis.readInt();
@@ -38,7 +40,7 @@ public class EventFactory {
                     return register_request;
                 case Protocol.REGISTER_RESPONSE:
                     // decode data into Message event
-                    System.out.println("Decoding data into a Message object...");
+                    System.out.println("[EventFactory] Decoding data into a Message object...");
                     byte statusCode;
                     String info;
                     statusCode = dis.readByte();
@@ -51,10 +53,10 @@ public class EventFactory {
                     Message register_response = new Message(messageType, statusCode, info);
                     return register_response;
                 default:
-                    throw new IllegalArgumentException("Unknown protocol passed to EventFactory...");
+                    throw new IllegalArgumentException("[EventFactory] Unknown protocol passed to EventFactory...");
             }
         } catch(IOException e) {
-            System.out.println("Exception while decoding data...");
+            System.out.println("[EventFactory] Exception while decoding data...");
         }
         return null;
     }
