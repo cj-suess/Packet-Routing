@@ -21,16 +21,24 @@ public class EventFactory {
             DataInputStream dis = new DataInputStream(bais);
             messageType = dis.readInt();
 
+            String ip;
+            int port;
+            int ipLength;
+            byte[] ipBytes;
+
+            byte statusCode;
+            String info;
+            int infoLength;
+            byte[] infoBytes;
+
             System.out.println("[EventFactory] New event being created...");
 
             switch (messageType) {
                 case Protocol.REGISTER_REQUEST:
                     // decode data into Register event
                     System.out.println("[EventFactory] Decoding data into a Register object...");
-                    String ip;
-                    int port;
-                    int ipLength = dis.readInt();
-                    byte[] ipBytes = new byte[ipLength];
+                    ipLength = dis.readInt();
+                    ipBytes = new byte[ipLength];
                     dis.readFully(ipBytes);
                     ip = new String(ipBytes);
                     port = dis.readInt();
@@ -38,20 +46,42 @@ public class EventFactory {
                     dis.close();
                     Register register_request = new Register(messageType, ip, port);
                     return register_request;
+                case Protocol.DEREGISTER_REQUEST:
+                    // decode into Deregister event
+                    System.out.println("[EventFactory] Decoding data into a Deregister object...");
+                    ipLength = dis.readInt();
+                    ipBytes = new byte[ipLength];
+                    dis.readFully(ipBytes);
+                    ip = new String(ipBytes);
+                    port = dis.readInt();
+                    bais.close();
+                    dis.close();
+                    Deregister deregister_request = new Deregister(messageType, ip, port);
+                    return deregister_request;
                 case Protocol.REGISTER_RESPONSE:
                     // decode data into Message event
                     System.out.println("[EventFactory] Decoding data into a Message object...");
-                    byte statusCode;
-                    String info;
                     statusCode = dis.readByte();
-                    int infoLength = dis.readInt();
-                    byte[] infoBytes = new byte[infoLength];
+                    infoLength = dis.readInt();
+                    infoBytes = new byte[infoLength];
                     dis.readFully(infoBytes);
                     info = new String(infoBytes);
                     bais.close();
                     dis.close();
                     Message register_response = new Message(messageType, statusCode, info);
                     return register_response;
+                case Protocol.DEREGISTER_RESPONSE:
+                    // decode data into Message event
+                    System.out.println("[EventFactory] Decoding data into a Message object...");
+                    statusCode = dis.readByte();
+                    infoLength = dis.readInt();
+                    infoBytes = new byte[infoLength];
+                    dis.readFully(infoBytes);
+                    info = new String(infoBytes);
+                    bais.close();
+                    dis.close();
+                    Message deregister_response = new Message(messageType, statusCode, info);
+                    return deregister_response;
                 default:
                     throw new IllegalArgumentException("[EventFactory] Unknown protocol passed to EventFactory...");
             }

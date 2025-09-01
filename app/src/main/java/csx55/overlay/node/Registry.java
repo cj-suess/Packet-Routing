@@ -35,8 +35,27 @@ public class Registry implements Node {
                     System.out.printf("[Registry] Sending success response to messaging node at %s\n", nodeEntry);
                     sender.sendData(successMessage.getBytes());
                 } else {
-                    // change to message sent to messaging node
+                    // add failure cases
                     System.err.println("[Registry] A node with the same IP address and port already is registered...");
+                }
+            }
+            if(event.getType() == Protocol.DEREGISTER_REQUEST) {
+                System.out.println("[Registry] Deregister request detected. Checking status...");
+                Deregister node = (Deregister) event; // downcast back to Deregister
+                String nodeEntry = node.ip + ":" + node.port;
+                if(registeredNodes.contains(nodeEntry)) {
+                    System.out.printf("[Registry] The node at %s has been removed from the registry...\n", nodeEntry);
+                    registeredNodes.remove(nodeEntry);
+                    String info = "[Registry] The node has been successfully removed from the registry...";
+                    Message successMessage = new Message(Protocol.DEREGISTER_RESPONSE, (byte)0, info);
+                    System.out.printf("[Registry] Sending deregistration success response to messaging node at %s\n", nodeEntry);
+                    sender.sendData(successMessage.getBytes());
+                } else if(!registeredNodes.contains(nodeEntry)){
+                    System.out.printf("[Registry] The node %s does not exist in the registry...\n", nodeEntry);
+                    String info = "[Registry] The node could not be removed from the registry since it was not registered...";
+                    Message failureMessage = new Message(Protocol.DEREGISTER_RESPONSE, (byte)1, info);
+                    System.out.printf("[Registry] Sending deregistration failure response to messaging node at %s\n", nodeEntry);
+                    sender.sendData(failureMessage.getBytes());
                 }
             }
         } catch(IOException e) {

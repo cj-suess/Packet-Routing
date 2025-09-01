@@ -6,9 +6,15 @@ import java.io.IOException;
 
 public class Deregister implements Event {
 
-    int messageType;
-    String ip;
-    int port;
+    public int messageType;
+    public String ip;
+    public int port;
+
+    public Deregister(int messageType, String ip, int port) {
+        this.messageType = messageType;
+        this.ip = ip;
+        this.port = port;
+    }
 
     @Override
     public byte[] getBytes() throws IOException{
@@ -22,7 +28,7 @@ public class Deregister implements Event {
         dout.writeInt(ipLength);
         dout.write(ipBytes);
 
-        dout.write(port);
+        dout.writeInt(port);
         dout.flush();
         encodedData = baos.toByteArray();
         
@@ -33,7 +39,7 @@ public class Deregister implements Event {
 
     @Override
     public int getType() {
-        return 2;
+        return Protocol.DEREGISTER_REQUEST;
     }
     
 }
