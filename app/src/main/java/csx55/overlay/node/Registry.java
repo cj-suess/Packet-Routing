@@ -1,6 +1,7 @@
 package csx55.overlay.node;
 
 import java.net.*;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.io.*;
@@ -60,13 +61,35 @@ public class Registry implements Node {
         }
     }
 
+    public void readTerminal() {
+        try {
+            Scanner scanner = new Scanner(System.in);
+            while(true) {
+                String command = scanner.nextLine();
+                switch (command) {
+                    case "exit":
+                        System.out.println("[Registry] Closing registry node...");
+                        System.exit(0);
+                        scanner.close();
+                        break;
+                    case "list-messaging-nodes":
+                        printRegistry();
+                    default:
+                        break;
+                }
+            }
+        } catch(Exception e) {
+            System.err.println("[Registry] Exception in terminal reader..." + e.getMessage());
+        }
+    }
+
     public void printRegistry() {
-        System.out.println("[Registry] Number of nodes currently in registry: " + registeredNodes.size());
         registeredNodes.forEach(key -> System.out.println(key));
     }
 
     public static void main(String[] args) {
         Registry reg = new Registry(Integer.parseInt(args[0]));
         new Thread(reg::startRegistry).start();
+        new Thread(reg::readTerminal).start();
     }
 }

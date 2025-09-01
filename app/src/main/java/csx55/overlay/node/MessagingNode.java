@@ -6,6 +6,7 @@ import csx55.overlay.transport.TCPServerThread;
 import csx55.overlay.wireformats.*;
 import java.io.IOException;
 import java.net.*;
+import java.util.Scanner;
 
 public class MessagingNode implements Node {
 
@@ -33,7 +34,7 @@ public class MessagingNode implements Node {
         try {
             serverSocket = new ServerSocket(0);
             serverPort = serverSocket.getLocalPort();
-            System.out.println("[MessagingNode] Messaging node is up and running. Listening on port: " + serverPort);
+            System.out.println("[MessagingNode] Messaging node is up and running.\n \t[MessagingNode] Listening on port: " + serverPort + "\n" + "\t[MessagingNode] IP Address: " + serverSocket.getInetAddress().getHostAddress());
 
             while(true) {
                 Socket socket = serverSocket.accept();
@@ -43,6 +44,26 @@ public class MessagingNode implements Node {
             }
         } catch(IOException e) {
             System.out.println("[MessagingNode] Exception while starting messaging node..." + e.getMessage());
+        }
+    }
+
+    public void readTerminal() {
+        try {
+            Scanner scanner = new Scanner(System.in);
+            while(true) {
+                String command = scanner.nextLine();
+                switch (command) {
+                    case "exit":
+                        System.out.println("[MessagingNode] Closing messaging node...");
+                        System.exit(0);
+                        scanner.close();
+                        break;
+                    default:
+                        break;
+                }
+            }
+        } catch(Exception e) {
+            System.err.println("[MessagingNode] Exception in terminal reader..." + e.getMessage());
         }
     }
 
@@ -66,6 +87,7 @@ public class MessagingNode implements Node {
     public static void main(String[] args) {
         MessagingNode node = new MessagingNode(args[0], Integer.parseInt(args[1]));
         new Thread(node::startNode).start();
+        new Thread(node::readTerminal).start();
         node.register();
     }
     
