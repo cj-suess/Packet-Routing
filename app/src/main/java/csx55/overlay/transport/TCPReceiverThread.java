@@ -32,7 +32,7 @@ public class TCPReceiverThread implements Runnable {
                 // pass data to EventFactory
                 EventFactory ef = new EventFactory(data);
                 Event decodedEvent = ef.createEvent();
-                node.onEvent(decodedEvent, sender);
+                node.onEvent(decodedEvent, sender, socket);
             } catch(SocketException soe) {
                 System.out.println("Socket exception caught reading data..." + soe.getMessage());
                 break;
