@@ -36,7 +36,7 @@ public class EventFactory {
             switch (messageType) {
                 case Protocol.REGISTER_REQUEST:
                     // decode data into Register event
-                    System.out.println("[EventFactory] Decoding data into a Register object...");
+                    System.out.println("\tDecoding data into a Register object...");
                     ipLength = dis.readInt();
                     ipBytes = new byte[ipLength];
                     dis.readFully(ipBytes);
@@ -48,7 +48,7 @@ public class EventFactory {
                     return register_request;
                 case Protocol.DEREGISTER_REQUEST:
                     // decode into Deregister event
-                    System.out.println("[EventFactory] Decoding data into a Deregister object...");
+                    System.out.println("\tDecoding data into a Deregister object...");
                     ipLength = dis.readInt();
                     ipBytes = new byte[ipLength];
                     dis.readFully(ipBytes);
@@ -60,7 +60,7 @@ public class EventFactory {
                     return deregister_request;
                 case Protocol.REGISTER_RESPONSE:
                     // decode data into Message event
-                    System.out.println("[EventFactory] Decoding data into a Message object...");
+                    System.out.println("\tDecoding data into a Message object...");
                     statusCode = dis.readByte();
                     infoLength = dis.readInt();
                     infoBytes = new byte[infoLength];
@@ -72,7 +72,7 @@ public class EventFactory {
                     return register_response;
                 case Protocol.DEREGISTER_RESPONSE:
                     // decode data into Message event
-                    System.out.println("[EventFactory] Decoding data into a Message object...");
+                    System.out.println("\tDecoding data into a Message object...");
                     statusCode = dis.readByte();
                     infoLength = dis.readInt();
                     infoBytes = new byte[infoLength];

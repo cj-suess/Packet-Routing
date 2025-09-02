@@ -33,7 +33,7 @@ public class Registry implements Node {
                 String nodeEntry = node.ip + ":" + node.port;
                 if(node.ip.equals(socketAddress) && registeredNodes.add(nodeEntry)) {
                     System.out.printf("[Registry] New node was added to the registry successfully!\n" + "[Registry] Current number of nodes in registry %d\n", registeredNodes.size());
-                    String info = "[Registry] Registration request successful. The number of messaging nodes currently constituting the overlay is (" + registeredNodes.size() + ")";
+                    String info = "Registration request successful. The number of messaging nodes currently constituting the overlay is (" + registeredNodes.size() + ")";
                     Message successMessage = new Message(Protocol.REGISTER_RESPONSE, (byte)0, info);
                     System.out.printf("[Registry] Sending success response to messaging node at %s\n", nodeEntry);
                     sender.sendData(successMessage.getBytes());
@@ -43,13 +43,13 @@ public class Registry implements Node {
                     if(!node.ip.equals(socketAddress)) {
                         // send failure for mismatch
                         System.out.println("[Registry] Sending failure message for mismatching IPs...");
-                        String info = "[Registry] Registration request failed. The IP address in the registration request did not match the IP address of the socket.";
+                        String info = "Registration request failed. The IP address in the registration request did not match the IP address of the socket.";
                         Message failureMessage = new Message(Protocol.REGISTER_RESPONSE, (byte)1, info);
                         sender.sendData(failureMessage.getBytes());
                     } else {
                         // send failure for duplicate
                         System.out.println("[Registry] Sending failure message for duplicate IPs...");
-                        String info = "[Registry] Registration request failed. The node entry already exists in the registry.";
+                        String info = "Registration request failed. The node entry already exists in the registry.";
                         Message failureMessage = new Message(Protocol.REGISTER_RESPONSE, (byte)1, info);
                         sender.sendData(failureMessage.getBytes());
 
@@ -63,7 +63,7 @@ public class Registry implements Node {
                 if(registeredNodes.contains(nodeEntry) && node.ip.equals(socketAddress)) {
                     System.out.printf("[Registry] The node at %s has been removed from the registry...\n", nodeEntry);
                     registeredNodes.remove(nodeEntry);
-                    String info = "[Registry] The node has been successfully removed from the registry...";
+                    String info = "The node has been successfully removed from the registry...";
                     Message successMessage = new Message(Protocol.DEREGISTER_RESPONSE, (byte)0, info);
                     System.out.printf("[Registry] Sending deregistration success response to messaging node at %s\n", nodeEntry);
                     sender.sendData(successMessage.getBytes());
@@ -71,14 +71,14 @@ public class Registry implements Node {
                     if(!node.ip.equals(socketAddress)){
                         // mismatch
                         System.out.println("[Registry] Sending failure message for mismatching IPs...");
-                        String info = "[Registry] Deregistration request failed. The IP address in the deregistration request did not match the IP address of the socket.";
+                        String info = "Deregistration request failed. The IP address in the deregistration request did not match the IP address of the socket.";
                         Message failureMessage = new Message(Protocol.DEREGISTER_RESPONSE, (byte)1, info);
                         System.out.printf("[Registry] Sending deregistration failure response to messaging node at %s\n", nodeEntry);
                         sender.sendData(failureMessage.getBytes());
                     } else {
                         // node entry does not exist
                         System.out.printf("[Registry] The node %s does not exist in the registry...\n", nodeEntry);
-                        String info = "[Registry] The node could not be removed from the registry since it was not registered...";
+                        String info = "The node could not be removed from the registry since it was not registered...";
                         Message failureMessage = new Message(Protocol.DEREGISTER_RESPONSE, (byte)1, info);
                         System.out.printf("[Registry] Sending deregistration failure response to messaging node at %s\n", nodeEntry);
                         sender.sendData(failureMessage.getBytes());
@@ -120,6 +120,7 @@ public class Registry implements Node {
                         break;
                     case "list-messaging-nodes":
                         printRegistry();
+                        break;
                     default:
                         break;
                 }

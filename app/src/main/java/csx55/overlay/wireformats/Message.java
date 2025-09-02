@@ -39,7 +39,7 @@ public class Message implements Event {
 
     @Override
     public int getType() {
-        return Protocol.REGISTER_RESPONSE;
+        return messageType;
     }
     
 }

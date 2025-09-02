@@ -32,13 +32,13 @@ public class MessagingNode implements Node {
     public void onEvent(Event event, TCPSender sender, Socket socket) {
         if(event.getType() == Protocol.REGISTER_RESPONSE) {
             Message message = (Message) event; // downcast back to Message
-            System.out.println(message.info);
-            if(message.statusCode == 0) { registered = true; }
+            System.out.println("[MessagingNode] " + message.info);
+            if(message.statusCode == (byte)0) { registered = true; }
         }
         if(event.getType() == Protocol.DEREGISTER_RESPONSE) {
             Message message = (Message) event; // downcast back to Message
-            System.out.println(message.info);
-            if(message.statusCode == 0) { registered = false; }
+            System.out.println("[MessagingNode] " + message.info);
+            if(message.statusCode == (byte)0) { registered = false; }
         }
     }
 
@@ -90,6 +90,9 @@ public class MessagingNode implements Node {
                     case "deregister":
                         deregister();
                         break;
+                    case "node-status":
+                        nodeStatus();
+                        break;
                     default:
                         break;
                 }
@@ -103,7 +106,7 @@ public class MessagingNode implements Node {
         try {
             if(registrySender == null) {
                 registrySocket = new Socket(hostname, port);
-                System.out.println("[MessagingNode] Connecting to registry...\n" + "[MessagingNode] Local Port: " + registrySocket.getLocalPort() +"\n" + "[MessagingNode] Remote Port: " + port);
+                System.out.println("[MessagingNode] Connecting to registry...\n" + "\tLocal Port: " + registrySocket.getLocalPort() +"\n" + "\tRemote Port: " + port);
                 // create register request instance
                 Register registerRequest = new Register(Protocol.REGISTER_REQUEST, registrySocket.getLocalAddress().getHostAddress(), serverPort);
                 // create sender instance to send register request
@@ -123,20 +126,17 @@ public class MessagingNode implements Node {
     }
 
     public void deregister() {
-        if(registrySender == null) {
-            System.out.println("No connection exists with the registry...");
-        }
-        else if(registered == false) {
-            System.out.println("This node is not registered. No deregistration request can be sent...");
-        } else {
-            System.out.println("[MessagingNode] Deregistering node...");
+        System.out.println("[MessagingNode] Deregistering node...");
             Deregister deregisterRequest = new Deregister(Protocol.DEREGISTER_REQUEST, registrySocket.getLocalAddress().getHostAddress(), serverPort);
             try {
                 registrySender.sendData(deregisterRequest.getBytes());
             } catch (IOException e) {
                 System.err.println("Exception while deregitering node..." + e.getMessage());
             }
-        }
+    }
+
+    public void nodeStatus() {
+        System.out.println("Current node status: " + this.registered);
     }
 
     public static void main(String[] args) {
