@@ -29,7 +29,7 @@ public class MessagingNode implements Node {
         this.registered = false;
     }
 
-    public void onEvent(Event event, TCPSender sender) {
+    public void onEvent(Event event, TCPSender sender, Socket socket) {
         if(event.getType() == Protocol.REGISTER_RESPONSE) {
             Message message = (Message) event; // downcast back to Message
             System.out.println(message.info);
@@ -46,7 +46,9 @@ public class MessagingNode implements Node {
         try {
             serverSocket = new ServerSocket(0);
             serverPort = serverSocket.getLocalPort();
-            System.out.println("[MessagingNode] Messaging node is up and running.\n \t[MessagingNode] Listening on port: " + serverPort + "\n" + "\t[MessagingNode] IP Address: " + serverSocket.getInetAddress().getHostAddress());
+            serverSocket.getInetAddress();
+            // messaging nodes IP address: InetAddress.getLocalHost().getHostAddress()
+            System.out.println("[MessagingNode] Messaging node is up and running.\n \tListening on port: " + serverPort + "\n" + "\tIP Address: " + InetAddress.getLocalHost().getHostAddress());
             register();
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> { // needed if the terminal crashes so the node deregisters. not sure if I can catch it elsewhere
@@ -82,8 +84,12 @@ public class MessagingNode implements Node {
                         System.exit(0);
                         scanner.close();
                         break;
+                    case "register":
+                        register();
+                        break;
                     case "deregister":
                         deregister();
+                        break;
                     default:
                         break;
                 }
@@ -95,17 +101,23 @@ public class MessagingNode implements Node {
 
     public void register() {
         try {
-            registrySocket = new Socket(hostname, port);
-            System.out.println("[MessagingNode] Connecting to registry...\n" + "[MessagingNode] Local Port: " + registrySocket.getLocalPort() +"\n" + "[MessagingNode] Remote Port: " + port);
-            // create register request instance
-            Register registerRequest = new Register(Protocol.REGISTER_REQUEST, registrySocket.getLocalAddress().getHostAddress(), serverPort);
-            // create sender instance to send register request
-            registrySender = new TCPSender(registrySocket);
-            // create receiving thread for response?
-            registryReceiver = new TCPReceiverThread(registrySocket, this, registrySender);
-            new Thread(registryReceiver).start();
-            registrySender.sendData(registerRequest.getBytes());
-        } catch (IOException e) {
+            if(registrySender == null) {
+                registrySocket = new Socket(hostname, port);
+                System.out.println("[MessagingNode] Connecting to registry...\n" + "[MessagingNode] Local Port: " + registrySocket.getLocalPort() +"\n" + "[MessagingNode] Remote Port: " + port);
+                // create register request instance
+                Register registerRequest = new Register(Protocol.REGISTER_REQUEST, registrySocket.getLocalAddress().getHostAddress(), serverPort);
+                // create sender instance to send register request
+                registrySender = new TCPSender(registrySocket);
+                // create receiving thread for response?
+                registryReceiver = new TCPReceiverThread(registrySocket, this, registrySender);
+                new Thread(registryReceiver).start();
+                registrySender.sendData(registerRequest.getBytes());
+            } else {
+                Register registerRequest = new Register(Protocol.REGISTER_REQUEST, registrySocket.getLocalAddress().getHostAddress(), serverPort);
+                registrySender.sendData(registerRequest.getBytes());
+            }
+            
+        } catch (Exception e) {
             System.out.println("[MessagingNode] Exception while registering node with registry...");
         }
     }
