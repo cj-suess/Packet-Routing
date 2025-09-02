@@ -14,7 +14,7 @@
 
 # list your hosts here, e.g., HOSTS=("carrot" "broccoli")
 # visit https://www.cs.colostate.edu/machinestats/ for a list of machines you can use
-HOSTS=("grouper" "denver" "tuna" "broccoli" "venus") # "bugatti" "berlin" "tomato" "cairo" "mars"
+HOSTS=("grouper" "denver" "tuna" "ferrari" "venus" "madrid" "berlin" "yam" "cairo" "mars") # "bugatti" "berlin" "tomato" "cairo" "mars"
 
 # path to your project directory, e.g., "~/cs455/hw1"
 DIR="/s/chopin/g/under/camsuess/Desktop/dev/cs555/CS555-HW1"
@@ -36,8 +36,7 @@ do
         tmux split-window -t $SESSION
     fi
     tmux send-keys -t $SESSION "ssh $HOST" C-m "module load courses/cs555" C-m "cd $DIR" C-m "clear" C-m
+    tmux select-layout -t $SESSION tiled
 done
-
-tmux select-layout -t $SESSION tiled
 tmux attach -t $SESSION
 
