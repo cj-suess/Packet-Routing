@@ -1,9 +1,8 @@
 package csx55.overlay.node;
 
 import java.net.*;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
+import java.util.concurrent.*;
 import java.io.*;
 
 import csx55.overlay.transport.*;
@@ -112,7 +111,8 @@ public class Registry implements Node {
             Scanner scanner = new Scanner(System.in);
             while(true) {
                 String command = scanner.nextLine();
-                switch (command) {
+                String[] splitCommand = command.split(" ");
+                switch (splitCommand[0]) {
                     case "exit":
                         System.out.println("[Registry] Closing registry node...");
                         System.exit(0);
@@ -121,12 +121,30 @@ public class Registry implements Node {
                     case "list-messaging-nodes":
                         printRegistry();
                         break;
+                    case "setup-overlay":
+                    int connections = 0;
+                    if(splitCommand.length > 1) {
+                        connections = Integer.parseInt(splitCommand[1]);
+                    }
+                    setupOverlay(connections);
+                        break;
                     default:
                         break;
                 }
             }
         } catch(Exception e) {
             System.err.println("[Registry] Exception in terminal reader..." + e.getMessage());
+        }
+    }
+
+    public void setupOverlay(int k) {
+        int n = registeredNodes.size();
+        // if we have at least 10 messaging nodes registered and n >= k + 1 and nk is even
+        if(n >= 10 && n >= k+1 && ((n*k) % 2 == 0)) {
+            Iterator<String> iter = registeredNodes.iterator();
+            Map<String, List<String>> overlay = new HashMap<>();
+        } else {
+            System.err.println("[Registry] Error. Cannot create overlay with current state.");
         }
     }
 

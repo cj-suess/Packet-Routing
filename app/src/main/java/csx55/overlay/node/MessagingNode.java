@@ -78,18 +78,19 @@ public class MessagingNode implements Node {
             while(true) {
                 String command = scanner.nextLine();
                 switch (command) {
-                    case "exit":
+                    case "exit-overlay":
                         System.out.println("[MessagingNode] Closing messaging node...");
                         if(registered == true) { deregister(); }
+                        System.out.println("exited overlay");
                         System.exit(0);
                         scanner.close();
                         break;
                     case "register":
                         register();
                         break;
-                    case "deregister":
-                        deregister();
-                        break;
+                    // case "deregister":
+                    //     deregister();
+                    //     break;
                     case "node-status":
                         nodeStatus();
                         break;
