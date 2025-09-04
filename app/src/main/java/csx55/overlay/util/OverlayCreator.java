@@ -19,7 +19,7 @@ public class OverlayCreator {
 
     public Map<String, Set<String>> build() {
         if(n >= k+1 && ((n*k) % 2 == 0)) {
-            initializeOverlay(this.overlay, nodeList);
+            initializeOverlay(overlay, nodeList);
             for(int i=0; i < n; i++) {
                 for(int j=1; j <= k/2; j++) {
                     overlay.get(nodeList.get(i)).add(nodeList.get((i+j) % n));
