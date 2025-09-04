@@ -61,7 +61,7 @@ public class Registry implements Node {
                     }
                 }
             }
-            if(event.getType() == Protocol.DEREGISTER_REQUEST) {
+            else if(event.getType() == Protocol.DEREGISTER_REQUEST) {
                 System.out.println("[Registry] Deregister request detected. Checking status...");
                 Deregister node = (Deregister) event; // downcast back to Deregister
                 String nodeEntry = node.ip + ":" + node.port;
@@ -101,8 +101,8 @@ public class Registry implements Node {
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> { // needed if the terminal crashes so the node deregisters. not sure if I can catch it elsewhere
                 try {
-                    serverSocket.close();
                     scanner.close();
+                    serverSocket.close();
                 } catch(IOException e) {
                     System.err.println("Exception while trying to clean up after sudden termination...");
                 }

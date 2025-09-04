@@ -36,7 +36,7 @@ public class MessagingNode implements Node {
             System.out.println("[MessagingNode] " + message.info);
             if(message.statusCode == (byte)0) { registered = true; }
         }
-        if(event.getType() == Protocol.DEREGISTER_RESPONSE) {
+        else if(event.getType() == Protocol.DEREGISTER_RESPONSE) {
             Message message = (Message) event; // downcast back to Message
             System.out.println("[MessagingNode] " + message.info);
             if(message.statusCode == (byte)0) { registered = false; }
@@ -55,8 +55,8 @@ public class MessagingNode implements Node {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> { // needed if the terminal crashes so the node deregisters. not sure if I can catch it elsewhere
                 try {
                     if(registered) { deregister(); }
-                    serverSocket.close();
                     scanner.close();
+                    serverSocket.close();
                 } catch(IOException e) {
                     System.err.println("Exception while trying to clean up after sudden termination...");
                 }
