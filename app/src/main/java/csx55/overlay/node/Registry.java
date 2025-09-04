@@ -6,6 +6,7 @@ import java.util.concurrent.*;
 import java.io.*;
 
 import csx55.overlay.transport.*;
+import csx55.overlay.util.OverlayCreator;
 import csx55.overlay.wireformats.*;
 
 public class Registry implements Node {
@@ -14,6 +15,7 @@ public class Registry implements Node {
     public ServerSocket serverSocket;
 
     Set<String> registeredNodes;
+    Map<String, Set<String>> overlay;
 
 
     public Registry(int port) {
@@ -111,7 +113,7 @@ public class Registry implements Node {
             Scanner scanner = new Scanner(System.in);
             while(true) {
                 String command = scanner.nextLine();
-                String[] splitCommand = command.split(" ");
+                String[] splitCommand = command.split("\\s+");
                 switch (splitCommand[0]) {
                     case "exit":
                         System.out.println("[Registry] Closing registry node...");
@@ -122,11 +124,16 @@ public class Registry implements Node {
                         printRegistry();
                         break;
                     case "setup-overlay":
-                    int connections = 0;
-                    if(splitCommand.length > 1) {
-                        connections = Integer.parseInt(splitCommand[1]);
-                    }
-                    setupOverlay(connections);
+                        int connections = 0;
+                        if(splitCommand.length > 1) {
+                            connections = Integer.parseInt(splitCommand[1]);
+                        }
+                        OverlayCreator oc = new OverlayCreator(registeredNodes, connections);
+                        overlay = oc.build();
+                        // test print of overlay construction
+                        for(Map.Entry<String, Set<String>> entry : overlay.entrySet()) {
+                            System.out.println("Messaging Node: " + entry.getKey() + " Connected nodes: " + entry.getValue());
+                        }
                         break;
                     default:
                         break;
@@ -134,17 +141,6 @@ public class Registry implements Node {
             }
         } catch(Exception e) {
             System.err.println("[Registry] Exception in terminal reader..." + e.getMessage());
-        }
-    }
-
-    public void setupOverlay(int k) {
-        int n = registeredNodes.size();
-        // if we have at least 10 messaging nodes registered and n >= k + 1 and nk is even
-        if(n >= 10 && n >= k+1 && ((n*k) % 2 == 0)) {
-            Iterator<String> iter = registeredNodes.iterator();
-            Map<String, List<String>> overlay = new HashMap<>();
-        } else {
-            System.err.println("[Registry] Error. Cannot create overlay with current state.");
         }
     }
 
