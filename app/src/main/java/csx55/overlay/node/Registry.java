@@ -153,7 +153,7 @@ public class Registry implements Node {
                 }
             }
         } catch(Exception e) {
-            System.err.println("[Registry] Exception in terminal reader..." + e.getMessage());
+            System.err.println("[Registry] Exception in terminal reader...");
         }
     }
 
