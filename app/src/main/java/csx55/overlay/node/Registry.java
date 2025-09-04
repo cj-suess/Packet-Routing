@@ -13,7 +13,6 @@ public class Registry implements Node {
 
     public int port;
     public ServerSocket serverSocket;
-    Scanner scanner;
 
     Set<TCPServerThread> openConnections;
 
@@ -61,7 +60,7 @@ public class Registry implements Node {
                     }
                 }
             }
-            if(event.getType() == Protocol.DEREGISTER_REQUEST) {
+            else if(event.getType() == Protocol.DEREGISTER_REQUEST) {
                 System.out.println("[Registry] Deregister request detected. Checking status...");
                 Deregister node = (Deregister) event; // downcast back to Deregister
                 String nodeEntry = node.ip + ":" + node.port;
@@ -102,7 +101,6 @@ public class Registry implements Node {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> { // needed if the terminal crashes so the node deregisters. not sure if I can catch it elsewhere
                 try {
                     serverSocket.close();
-                    scanner.close();
                 } catch(IOException e) {
                     System.err.println("Exception while trying to clean up after sudden termination...");
                 }
@@ -123,7 +121,7 @@ public class Registry implements Node {
 
     public void readTerminal() {
         try {
-            scanner = new Scanner(System.in);
+            Scanner scanner = new Scanner(System.in);
             while(true) {
                 String command = scanner.nextLine();
                 String[] splitCommand = command.split("\\s+");
@@ -155,7 +153,7 @@ public class Registry implements Node {
                 }
             }
         } catch(Exception e) {
-            System.err.println("[Registry] Exception in terminal reader..." + e.getMessage());
+            System.err.println("[Registry] Exception in terminal reader...");
         }
     }
 

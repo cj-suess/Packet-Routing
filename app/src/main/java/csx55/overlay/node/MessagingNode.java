@@ -16,7 +16,6 @@ public class MessagingNode implements Node {
 
     ServerSocket serverSocket;
     int serverPort;
-    Scanner scanner;
 
     // Registry info
     Socket registrySocket;
@@ -36,7 +35,7 @@ public class MessagingNode implements Node {
             System.out.println("[MessagingNode] " + message.info);
             if(message.statusCode == (byte)0) { registered = true; }
         }
-        if(event.getType() == Protocol.DEREGISTER_RESPONSE) {
+        else if(event.getType() == Protocol.DEREGISTER_RESPONSE) {
             Message message = (Message) event; // downcast back to Message
             System.out.println("[MessagingNode] " + message.info);
             if(message.statusCode == (byte)0) { registered = false; }
@@ -56,7 +55,6 @@ public class MessagingNode implements Node {
                 try {
                     if(registered) { deregister(); }
                     serverSocket.close();
-                    scanner.close();
                 } catch(IOException e) {
                     System.err.println("Exception while trying to clean up after sudden termination...");
                 }
@@ -76,7 +74,7 @@ public class MessagingNode implements Node {
 
     public void readTerminal() {
         try {
-            scanner = new Scanner(System.in);
+            Scanner scanner = new Scanner(System.in);
             while(true) {
                 String command = scanner.nextLine();
                 switch (command) {
