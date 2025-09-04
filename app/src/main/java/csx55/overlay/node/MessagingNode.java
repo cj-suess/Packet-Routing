@@ -16,7 +16,6 @@ public class MessagingNode implements Node {
 
     ServerSocket serverSocket;
     int serverPort;
-    Scanner scanner;
 
     // Registry info
     Socket registrySocket;
@@ -55,7 +54,6 @@ public class MessagingNode implements Node {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> { // needed if the terminal crashes so the node deregisters. not sure if I can catch it elsewhere
                 try {
                     if(registered) { deregister(); }
-                    scanner.close();
                     serverSocket.close();
                 } catch(IOException e) {
                     System.err.println("Exception while trying to clean up after sudden termination...");
@@ -76,7 +74,7 @@ public class MessagingNode implements Node {
 
     public void readTerminal() {
         try {
-            scanner = new Scanner(System.in);
+            Scanner scanner = new Scanner(System.in);
             while(true) {
                 String command = scanner.nextLine();
                 switch (command) {

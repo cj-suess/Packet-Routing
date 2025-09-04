@@ -13,7 +13,6 @@ public class Registry implements Node {
 
     public int port;
     public ServerSocket serverSocket;
-    Scanner scanner;
 
     Set<TCPServerThread> openConnections;
 
@@ -101,7 +100,6 @@ public class Registry implements Node {
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> { // needed if the terminal crashes so the node deregisters. not sure if I can catch it elsewhere
                 try {
-                    scanner.close();
                     serverSocket.close();
                 } catch(IOException e) {
                     System.err.println("Exception while trying to clean up after sudden termination...");
@@ -123,7 +121,7 @@ public class Registry implements Node {
 
     public void readTerminal() {
         try {
-            scanner = new Scanner(System.in);
+            Scanner scanner = new Scanner(System.in);
             while(true) {
                 String command = scanner.nextLine();
                 String[] splitCommand = command.split("\\s+");
