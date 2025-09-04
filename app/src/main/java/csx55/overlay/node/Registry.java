@@ -1,12 +1,12 @@
 package csx55.overlay.node;
 
 import java.net.*;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
+import java.util.concurrent.*;
 import java.io.*;
 
 import csx55.overlay.transport.*;
+import csx55.overlay.util.OverlayCreator;
 import csx55.overlay.wireformats.*;
 
 public class Registry implements Node {
@@ -15,6 +15,7 @@ public class Registry implements Node {
     public ServerSocket serverSocket;
 
     Set<String> registeredNodes;
+    Map<String, Set<String>> overlay;
 
 
     public Registry(int port) {
@@ -112,7 +113,8 @@ public class Registry implements Node {
             Scanner scanner = new Scanner(System.in);
             while(true) {
                 String command = scanner.nextLine();
-                switch (command) {
+                String[] splitCommand = command.split("\\s+");
+                switch (splitCommand[0]) {
                     case "exit":
                         System.out.println("[Registry] Closing registry node...");
                         System.exit(0);
@@ -120,6 +122,18 @@ public class Registry implements Node {
                         break;
                     case "list-messaging-nodes":
                         printRegistry();
+                        break;
+                    case "setup-overlay":
+                        int connections = 0;
+                        if(splitCommand.length > 1) {
+                            connections = Integer.parseInt(splitCommand[1]);
+                        }
+                        OverlayCreator oc = new OverlayCreator(registeredNodes, connections);
+                        overlay = oc.build();
+                        // test print of overlay construction
+                        for(Map.Entry<String, Set<String>> entry : overlay.entrySet()) {
+                            System.out.println("Messaging Node: " + entry.getKey() + " Connected nodes: " + entry.getValue());
+                        }
                         break;
                     default:
                         break;

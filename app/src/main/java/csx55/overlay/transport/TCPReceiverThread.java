@@ -34,10 +34,10 @@ public class TCPReceiverThread implements Runnable {
                 Event decodedEvent = ef.createEvent();
                 node.onEvent(decodedEvent, sender, socket);
             } catch(SocketException soe) {
-                System.out.println("Socket exception caught reading data..." + soe.getMessage());
+                System.out.println("[TCPReceiverThread] Socket exception caught reading data..." + soe.getLocalizedMessage());
                 break;
             } catch(IOException ioe) {
-                System.out.println("IO exception caught reading data..." + ioe.getMessage());
+                System.out.println("[TCPReceiverThread] IO exception caught reading data..." + ioe.getLocalizedMessage());
                 break;
             } 
         }
