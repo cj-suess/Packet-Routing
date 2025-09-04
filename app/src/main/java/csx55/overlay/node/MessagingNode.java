@@ -12,13 +12,14 @@ public class MessagingNode implements Node {
 
     String hostname;
     int port;
-    boolean registered;
+    boolean registered; // make atomic?
 
     ServerSocket serverSocket;
-    static int serverPort;
+    int serverPort;
+    Scanner scanner;
 
     // Registry info
-    static Socket registrySocket;
+    Socket registrySocket;
     TCPSender registrySender;
     TCPReceiverThread registryReceiver;
 
@@ -55,6 +56,7 @@ public class MessagingNode implements Node {
                 try {
                     if(registered) { deregister(); }
                     serverSocket.close();
+                    scanner.close();
                 } catch(IOException e) {
                     System.err.println("Exception while trying to clean up after sudden termination...");
                 }
@@ -63,7 +65,7 @@ public class MessagingNode implements Node {
             while(true) {
                 Socket socket = serverSocket.accept();
                 System.out.println("[MessagingNode] New connection on messaging node from: " + socket.getInetAddress());
-                TCPServerThread st = new TCPServerThread(socket, this);
+                TCPServerThread st = new TCPServerThread(socket, this); // possibly refactor? not sure if this is redundant 
                 new Thread(st).start();
             }
 
@@ -74,7 +76,7 @@ public class MessagingNode implements Node {
 
     public void readTerminal() {
         try {
-            Scanner scanner = new Scanner(System.in);
+            scanner = new Scanner(System.in);
             while(true) {
                 String command = scanner.nextLine();
                 switch (command) {
@@ -105,11 +107,8 @@ public class MessagingNode implements Node {
             if(registrySender == null) {
                 registrySocket = new Socket(hostname, port);
                 System.out.println("[MessagingNode] Connecting to registry...\n" + "\tLocal Port: " + registrySocket.getLocalPort() +"\n" + "\tRemote Port: " + port);
-                // create register request instance
                 Register registerRequest = new Register(Protocol.REGISTER_REQUEST, registrySocket.getLocalAddress().getHostAddress(), serverPort);
-                // create sender instance to send register request
                 registrySender = new TCPSender(registrySocket);
-                // create receiving thread for response?
                 registryReceiver = new TCPReceiverThread(registrySocket, this, registrySender);
                 new Thread(registryReceiver).start();
                 registrySender.sendData(registerRequest.getBytes());

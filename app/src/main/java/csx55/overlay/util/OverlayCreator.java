@@ -20,7 +20,6 @@ public class OverlayCreator {
         if(n >= 10 && n >= connections+1 && ((n*connections) % 2 == 0)) {
             for(int i=0; i < nodeList.size(); i++) {
                 String currentNode = nodeList.get(i);
-                System.out.println(currentNode);
                 overlay.put(currentNode, new HashSet<>());
             }
         } else {

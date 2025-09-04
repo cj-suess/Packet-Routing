@@ -13,14 +13,18 @@ public class Registry implements Node {
 
     public int port;
     public ServerSocket serverSocket;
+    Scanner scanner;
+
+    Set<TCPServerThread> openConnections;
 
     Set<String> registeredNodes;
-    Map<String, Set<String>> overlay;
-
+    Map<String, Set<String>> overlay; // grab messaging node ip and match with correct socket in openConnections
+                                     // encode edge strings as is and parse on the other side
 
     public Registry(int port) {
         this.port = port;
         registeredNodes = ConcurrentHashMap.newKeySet(); // should work better using a single String?
+        openConnections = ConcurrentHashMap.newKeySet();
     }
 
     public void onEvent(Event event, TCPSender sender, Socket socket) {
@@ -61,9 +65,8 @@ public class Registry implements Node {
                 System.out.println("[Registry] Deregister request detected. Checking status...");
                 Deregister node = (Deregister) event; // downcast back to Deregister
                 String nodeEntry = node.ip + ":" + node.port;
-                if(registeredNodes.contains(nodeEntry) && node.ip.equals(socketAddress)) {
+                if(registeredNodes.remove(nodeEntry) && node.ip.equals(socketAddress)) {
                     System.out.printf("[Registry] The node at %s has been removed from the registry...\n", nodeEntry);
-                    registeredNodes.remove(nodeEntry);
                     String info = "The node has been successfully removed from the registry...";
                     Message successMessage = new Message(Protocol.DEREGISTER_RESPONSE, (byte)0, info);
                     System.out.printf("[Registry] Sending deregistration success response to messaging node at %s\n", nodeEntry);
@@ -96,10 +99,20 @@ public class Registry implements Node {
             serverSocket = new ServerSocket(port);
             System.out.println("[Registry] Registry is up and running. Listening on port: " + port + "\n");
 
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> { // needed if the terminal crashes so the node deregisters. not sure if I can catch it elsewhere
+                try {
+                    serverSocket.close();
+                    scanner.close();
+                } catch(IOException e) {
+                    System.err.println("Exception while trying to clean up after sudden termination...");
+                }
+            }));
+
             while(true) {
                 Socket socket = serverSocket.accept();
                 System.out.println("\n[Registry] New connection from: " + socket.getInetAddress().getHostAddress());
-                TCPServerThread st = new TCPServerThread(socket, this);
+                TCPServerThread st = new TCPServerThread(socket, this); // possibly refactor? not sure if this is redundant 
+                openConnections.add(st);
                 new Thread(st).start();
             }
 
@@ -110,15 +123,15 @@ public class Registry implements Node {
 
     public void readTerminal() {
         try {
-            Scanner scanner = new Scanner(System.in);
+            scanner = new Scanner(System.in);
             while(true) {
                 String command = scanner.nextLine();
                 String[] splitCommand = command.split("\\s+");
                 switch (splitCommand[0]) {
                     case "exit":
                         System.out.println("[Registry] Closing registry node...");
-                        System.exit(0);
                         scanner.close();
+                        System.exit(0);
                         break;
                     case "list-messaging-nodes":
                         printRegistry();
@@ -135,6 +148,8 @@ public class Registry implements Node {
                             System.out.println("Messaging Node: " + entry.getKey() + " Connected nodes: " + entry.getValue());
                         }
                         break;
+                    case "print-connections":
+                        printConnections();
                     default:
                         break;
                 }
@@ -146,6 +161,12 @@ public class Registry implements Node {
 
     public void printRegistry() {
         registeredNodes.forEach(key -> System.out.println(key));
+    }
+
+    public void printConnections() {
+        for(TCPServerThread conn : openConnections) {
+            System.out.println(conn.socket.getInetAddress().getHostAddress());
+        }
     }
 
     public static void main(String[] args) {
