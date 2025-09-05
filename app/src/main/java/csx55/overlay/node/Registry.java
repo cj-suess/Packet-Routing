@@ -20,6 +20,7 @@ public class Registry implements Node {
     Set<String> registeredNodes;
     Map<String, List<Tuple>> overlay; // grab messaging node ip and match with correct socket in openConnections
                                      // encode edge strings as is and parse on the other side
+    Map<String, List<Tuple>> connectionMap;
 
     public Registry(int port) {
         this.port = port;
@@ -142,11 +143,17 @@ public class Registry implements Node {
                         }
                         OverlayCreator oc = new OverlayCreator(registeredNodes, connections);
                         overlay = oc.build();
+                        connectionMap = oc.filter();
                         break;
                     case "print-connections":
                         printConnections();
+                        break;
                     case "print-overlay":
                         printOverlay();
+                        break;
+                    case "print-connection-map":
+                        printConnectionMap();
+                        break;
                     default:
                         break;
                 }
@@ -173,6 +180,12 @@ public class Registry implements Node {
                 System.out.print(" " + t.getEndpoint());
             }
             System.out.println("]");
+        }
+    }
+
+    public void printConnectionMap() {
+        for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()){
+            System.out.println(entry);
         }
     }
 

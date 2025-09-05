@@ -7,6 +7,7 @@ import csx55.overlay.wireformats.*;
 import java.io.IOException;
 import java.net.*;
 import java.util.Scanner;
+import java.util.Set;
 
 public class MessagingNode implements Node {
 
@@ -21,6 +22,9 @@ public class MessagingNode implements Node {
     Socket registrySocket;
     TCPSender registrySender;
     TCPReceiverThread registryReceiver;
+
+    // Messaging nodes
+    Set<TCPServerThread> openConnections;
 
 
     public MessagingNode(String hostname, int port) {
@@ -118,6 +122,11 @@ public class MessagingNode implements Node {
         } catch (Exception e) {
             System.out.println("[MessagingNode] Exception while registering node with registry...");
         }
+    }
+
+    public synchronized void connect(){
+        // check if connection exists with host/port first
+            // if it does move on to next on list
     }
 
     public void deregister() {

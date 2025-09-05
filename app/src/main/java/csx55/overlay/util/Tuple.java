@@ -3,9 +3,9 @@ package csx55.overlay.util;
 public class Tuple {
 
     String endpoint;
-    Integer weight;
+    int weight;
 
-    public Tuple(String endpoint, Integer weight) {
+    public Tuple(String endpoint, int weight) {
         this.endpoint = endpoint;
         this.weight = weight;
     }
