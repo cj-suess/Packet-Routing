@@ -6,7 +6,7 @@ public class OverlayCreator {
 
     Set<String> nodes;
     int n,k;
-    Map<String, Set<String>> overlay;
+    Map<String, List<Tuple>> overlay;
     List<String> nodeList;
 
     public OverlayCreator(Set<String> nodes, int connections) {
@@ -17,33 +17,25 @@ public class OverlayCreator {
         nodeList = new ArrayList<>(nodes);
     }
 
-    public Map<String, Set<String>> build() {
+    public Map<String, List<Tuple>> build() {
         if(n >= k+1 && ((n*k) % 2 == 0)) {
-            initializeOverlay(overlay, nodeList);
             for(int i=0; i < n; i++) {
+                overlay.put(nodeList.get(i), new ArrayList<>());
                 for(int j=1; j <= k/2; j++) {
-                    overlay.get(nodeList.get(i)).add(nodeList.get((i+j) % n));
-                    overlay.get(nodeList.get(i)).add(nodeList.get((i-j+n) % n));
+                    overlay.get(nodeList.get(i)).add(new Tuple(nodeList.get((i+j) % n), null));
+                    overlay.get(nodeList.get(i)).add(new Tuple(nodeList.get((i-j+n) % n), null));
                 }
             }
             if(k % 2 == 1) {
                  for(int i = 0; i < nodeList.size(); i++) {
                     int j = (i + n/2) % n;
-                    overlay.get(nodeList.get(i)).add((nodeList.get(j)));
+                    overlay.get(nodeList.get(i)).add(new Tuple(nodeList.get(j), null));
                 }
             }
         } else {
             System.err.println("[Registry] Error. Cannot create overlay with current state.");
         }
         return overlay;
-    }
-
-    public void initializeOverlay(Map<String, Set<String>> overlay, List<String> nodeList) {
-        System.out.println("Initializing overlay....");
-        for(int i=0; i < nodeList.size(); i++) {
-                overlay.put(nodeList.get(i), new HashSet<>());
-                overlay.get(nodeList.get(i)).add(nodeList.get((i+1) % n));
-        }
     }
     
 }

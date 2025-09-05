@@ -7,6 +7,7 @@ import java.io.*;
 
 import csx55.overlay.transport.*;
 import csx55.overlay.util.OverlayCreator;
+import csx55.overlay.util.Tuple;
 import csx55.overlay.wireformats.*;
 
 public class Registry implements Node {
@@ -17,7 +18,7 @@ public class Registry implements Node {
     Set<TCPServerThread> openConnections;
 
     Set<String> registeredNodes;
-    Map<String, Set<String>> overlay; // grab messaging node ip and match with correct socket in openConnections
+    Map<String, List<Tuple>> overlay; // grab messaging node ip and match with correct socket in openConnections
                                      // encode edge strings as is and parse on the other side
 
     public Registry(int port) {
@@ -141,13 +142,11 @@ public class Registry implements Node {
                         }
                         OverlayCreator oc = new OverlayCreator(registeredNodes, connections);
                         overlay = oc.build();
-                        // test print of overlay construction
-                        for(Map.Entry<String, Set<String>> entry : overlay.entrySet()) {
-                            System.out.println("Messaging Node: " + entry.getKey() + " Connected nodes: " + entry.getValue());
-                        }
                         break;
                     case "print-connections":
                         printConnections();
+                    case "print-overlay":
+                        printOverlay();
                     default:
                         break;
                 }
@@ -164,6 +163,16 @@ public class Registry implements Node {
     public void printConnections() {
         for(TCPServerThread conn : openConnections) {
             System.out.println(conn.socket.getInetAddress().getHostAddress());
+        }
+    }
+
+    public void printOverlay() {
+        for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()) {
+            System.out.print("Messaging Node: " + entry.getKey() + " [Connected nodes:");
+            for(Tuple t : entry.getValue()) {
+                System.out.print(" " + t.getEndpoint());
+            }
+            System.out.println("]");
         }
     }
 
