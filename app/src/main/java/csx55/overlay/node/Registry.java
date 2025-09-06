@@ -15,22 +15,23 @@ public class Registry implements Node {
     public int port;
     public ServerSocket serverSocket;
 
-    Set<TCPServerThread> openConnections;
+    List<TCPConnection> openConnections;
 
     Set<String> registeredNodes;
     Map<String, List<Tuple>> overlay; // grab messaging node ip and match with correct socket in openConnections
-                                     // encode edge strings as is and parse on the other side
-    Map<String, List<Tuple>> connectionMap;
+    Map<String, List<Tuple>> connectionMap; // use for relaying who connects to who to avoid duplicate connections
 
     public Registry(int port) {
         this.port = port;
         registeredNodes = ConcurrentHashMap.newKeySet(); // should work better using a single String?
-        openConnections = ConcurrentHashMap.newKeySet();
+        openConnections =  new ArrayList<>();
     }
 
-    public void onEvent(Event event, TCPSender sender, Socket socket) {
+    public void onEvent(Event event, Socket socket) {
 
+        TCPSender sender = getSender(openConnections, socket);
         String socketAddress = socket.getInetAddress().getHostAddress(); // messaging nodes IP address
+        int socketPort = socket.getPort(); // messaging nodes port
 
         try {
             if(event.getType() == Protocol.REGISTER_REQUEST) {
@@ -95,6 +96,15 @@ public class Registry implements Node {
         }
     }
 
+    private TCPSender getSender(List<TCPConnection> openConnections, Socket socket) {
+        for(TCPConnection conn : openConnections) {
+            if(socket == conn.socket) {
+                return conn.sender;
+            }
+        }
+        return null;
+    }
+
     public void startRegistry() {
         try {
             serverSocket = new ServerSocket(port);
@@ -111,9 +121,9 @@ public class Registry implements Node {
             while(true) {
                 Socket socket = serverSocket.accept();
                 System.out.println("\n[Registry] New connection from: " + socket.getInetAddress().getHostAddress());
-                TCPServerThread st = new TCPServerThread(socket, this); // possibly refactor? not sure if this is redundant 
-                openConnections.add(st);
-                new Thread(st).start();
+                TCPConnection conn = new TCPConnection(socket, this); // possibly refactor? not sure if this is redundant 
+                openConnections.add(conn);
+                new Thread(conn).start();
             }
 
         } catch(IOException e) {
@@ -168,7 +178,7 @@ public class Registry implements Node {
     }
 
     public void printConnections() {
-        for(TCPServerThread conn : openConnections) {
+        for(TCPConnection conn : openConnections) {
             System.out.println(conn.socket.getInetAddress().getHostAddress());
         }
     }

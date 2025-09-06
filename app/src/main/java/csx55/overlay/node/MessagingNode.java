@@ -2,7 +2,7 @@ package csx55.overlay.node;
 
 import csx55.overlay.transport.TCPReceiverThread;
 import csx55.overlay.transport.TCPSender;
-import csx55.overlay.transport.TCPServerThread;
+import csx55.overlay.transport.TCPConnection;
 import csx55.overlay.wireformats.*;
 import java.io.IOException;
 import java.net.*;
@@ -11,29 +11,29 @@ import java.util.Set;
 
 public class MessagingNode implements Node {
 
-    String hostname;
-    int port;
     boolean registered; // make atomic?
 
     ServerSocket serverSocket;
     int serverPort;
 
     // Registry info
+    String registryIP;
+    int registryPort;
     Socket registrySocket;
     TCPSender registrySender;
     TCPReceiverThread registryReceiver;
 
     // Messaging nodes
-    Set<TCPServerThread> openConnections;
+    Set<TCPConnection> openConnections;
 
 
-    public MessagingNode(String hostname, int port) {
-        this.hostname = hostname;
-        this.port = port;
+    public MessagingNode(String registryIP, int registryPort) {
+        this.registryIP = registryIP;
+        this.registryPort = registryPort;
         this.registered = false;
     }
 
-    public void onEvent(Event event, TCPSender sender, Socket socket) {
+    public void onEvent(Event event, Socket socket) {
         if(event.getType() == Protocol.REGISTER_RESPONSE) {
             Message message = (Message) event; // downcast back to Message
             System.out.println("[MessagingNode] " + message.info);
@@ -67,7 +67,7 @@ public class MessagingNode implements Node {
             while(true) {
                 Socket socket = serverSocket.accept();
                 System.out.println("[MessagingNode] New connection on messaging node from: " + socket.getInetAddress());
-                TCPServerThread st = new TCPServerThread(socket, this); // possibly refactor? not sure if this is redundant 
+                TCPConnection st = new TCPConnection(socket, this); // possibly refactor? not sure if this is redundant 
                 new Thread(st).start();
             }
 
@@ -107,11 +107,11 @@ public class MessagingNode implements Node {
     public void register() {
         try {
             if(registrySender == null) {
-                registrySocket = new Socket(hostname, port);
-                System.out.println("[MessagingNode] Connecting to registry...\n" + "\tLocal Port: " + registrySocket.getLocalPort() +"\n" + "\tRemote Port: " + port);
+                registrySocket = new Socket(registryIP, registryPort);
+                System.out.println("[MessagingNode] Connecting to registry...\n" + "\tLocal Port: " + registrySocket.getLocalPort() +"\n" + "\tRemote Port: " + registryPort);
                 Register registerRequest = new Register(Protocol.REGISTER_REQUEST, registrySocket.getLocalAddress().getHostAddress(), serverPort);
                 registrySender = new TCPSender(registrySocket);
-                registryReceiver = new TCPReceiverThread(registrySocket, this, registrySender);
+                registryReceiver = new TCPReceiverThread(registrySocket, this);
                 new Thread(registryReceiver).start();
                 registrySender.sendData(registerRequest.getBytes());
             } else {
