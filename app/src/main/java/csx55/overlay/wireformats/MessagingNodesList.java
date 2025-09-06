@@ -50,5 +50,13 @@ public class MessagingNodesList implements Event {
             dout.writeInt(t.getWeight());
         }
     }
+
+    @Override
+    public String toString() {
+        for(Tuple t : peers) {
+            return t.getEndpoint() + " ";
+        }
+        return null;
+    }
     
 }

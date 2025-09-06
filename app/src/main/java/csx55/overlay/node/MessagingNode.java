@@ -44,6 +44,10 @@ public class MessagingNode implements Node {
             System.out.println("[MessagingNode] " + message.info);
             if(message.statusCode == (byte)0) { registered = false; }
         }
+        else if(event.getType() == Protocol.MESSAGING_NODES_LIST) {
+            MessagingNodesList conn = (MessagingNodesList) event;
+            System.out.println(conn.toString());
+        }
     }
 
     public void startNode() {

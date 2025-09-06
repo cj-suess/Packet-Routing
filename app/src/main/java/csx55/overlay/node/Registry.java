@@ -175,10 +175,18 @@ public class Registry implements Node {
         }
     }
 
-    public void sendConnections() {
-        System.out.println("Sending connections to the messaging nodes...");
+    public void sendConnections() throws IOException {
+        System.out.println("[Registry] Sending connections to the messaging nodes...");
         for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()) {
-            
+            String nodeIP = entry.getKey().substring(0, entry.getKey().indexOf(":"));
+            int numConnections = entry.getValue().size();
+            List<Tuple> peers = entry.getValue();
+            MessagingNodesList instructions = new MessagingNodesList(Protocol.MESSAGING_NODES_LIST, numConnections, peers);
+            for(TCPConnection conn : openConnections){
+                if(nodeIP == conn.socket.getInetAddress().getHostAddress()) {
+                    conn.sender.sendData(instructions.getBytes());
+                }
+            }
         }
 
     }
