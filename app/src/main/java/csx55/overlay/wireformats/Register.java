@@ -22,16 +22,15 @@ public class Register implements Event, Protocol {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dout = new DataOutputStream(baos);
         dout.writeInt(messageType);
-
+        /* FILL IN REQURED MARSHALING */
         byte[] ipBytes = ip.getBytes();
         int ipLength = ipBytes.length;
         dout.writeInt(ipLength);
         dout.write(ipBytes);
-
         dout.writeInt(port);
+        /*                           */
         dout.flush();
         encodedData = baos.toByteArray();
-        
         baos.close();
         dout.close();
         return encodedData;

@@ -3,6 +3,10 @@ package csx55.overlay.wireformats;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import csx55.overlay.util.Tuple;
 
 public class EventFactory {
 
@@ -27,9 +31,13 @@ public class EventFactory {
             byte[] ipBytes;
 
             byte statusCode;
-            String info;
-            int infoLength;
-            byte[] infoBytes;
+            String info = null;
+            int infoLength = 0;
+            byte[] infoBytes = null;
+
+            int numConnections;
+            List<Tuple> peers = new ArrayList<>();
+            int weight = 0;
 
             System.out.println("[EventFactory] New event being created...");
 
@@ -82,6 +90,18 @@ public class EventFactory {
                     dis.close();
                     Message deregister_response = new Message(messageType, statusCode, info);
                     return deregister_response;
+                case Protocol.MESSAGING_NODES_LIST:
+                    // decode data into MessagingNodesList event
+                    System.out.println("\tDecoding data into a MessagingNodesList object...");
+                    numConnections = dis.readInt();
+                    for(int i = 0; i < numConnections; i++) {
+                        Tuple t = createPeer(dis, info, infoLength, infoBytes, weight);
+                        peers.add(t);
+                    }
+                    bais.close();
+                    dis.close();
+                    MessagingNodesList node_list = new MessagingNodesList(messageType, numConnections, peers);
+                    return node_list;
                 default:
                     throw new IllegalArgumentException("[EventFactory] Unknown protocol passed to EventFactory...");
             }
@@ -89,6 +109,14 @@ public class EventFactory {
             System.out.println("[EventFactory] Exception while decoding data...");
         }
         return null;
+    }
+
+    private Tuple createPeer(DataInputStream dis, String info, int infoLength, byte[] infoBytes, int weight) throws IOException {
+        infoLength = dis.readInt();
+        infoBytes = new byte[infoLength];
+        dis.readFully(infoBytes);
+        info = new String(infoBytes);
+        return new Tuple(info, weight);
     }
 
 }

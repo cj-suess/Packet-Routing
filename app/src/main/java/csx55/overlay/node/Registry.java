@@ -154,6 +154,8 @@ public class Registry implements Node {
                         OverlayCreator oc = new OverlayCreator(registeredNodes, connections);
                         overlay = oc.build();
                         connectionMap = oc.filter();
+                        // send connection instructions to messaging nodes
+                        sendConnections();
                         break;
                     case "print-connections":
                         printConnections();
@@ -171,6 +173,14 @@ public class Registry implements Node {
         } catch(Exception e) {
             System.err.println("[Registry] Exception in terminal reader...");
         }
+    }
+
+    public void sendConnections() {
+        System.out.println("Sending connections to the messaging nodes...");
+        for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()) {
+            
+        }
+
     }
 
     public void printRegistry() {

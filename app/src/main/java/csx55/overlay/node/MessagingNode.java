@@ -67,7 +67,7 @@ public class MessagingNode implements Node {
             while(true) {
                 Socket socket = serverSocket.accept();
                 System.out.println("[MessagingNode] New connection on messaging node from: " + socket.getInetAddress());
-                TCPConnection st = new TCPConnection(socket, this); // possibly refactor? not sure if this is redundant 
+                TCPConnection st = new TCPConnection(socket, this); 
                 new Thread(st).start();
             }
 
@@ -125,8 +125,7 @@ public class MessagingNode implements Node {
     }
 
     public synchronized void connect(){
-        // check if connection exists with host/port first
-            // if it does move on to next on list
+        
     }
 
     public void deregister() {
