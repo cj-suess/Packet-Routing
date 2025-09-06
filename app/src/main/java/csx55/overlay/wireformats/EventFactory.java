@@ -116,6 +116,7 @@ public class EventFactory {
         infoBytes = new byte[infoLength];
         dis.readFully(infoBytes);
         info = new String(infoBytes);
+        weight = dis.readInt();
         return new Tuple(info, weight);
     }
 

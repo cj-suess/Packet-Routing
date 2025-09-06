@@ -183,7 +183,7 @@ public class Registry implements Node {
             List<Tuple> peers = entry.getValue();
             MessagingNodesList instructions = new MessagingNodesList(Protocol.MESSAGING_NODES_LIST, numConnections, peers);
             for(TCPConnection conn : openConnections){
-                if(nodeIP == conn.socket.getInetAddress().getHostAddress()) {
+                if(nodeIP.equals(conn.socket.getInetAddress().getHostAddress())) {
                     conn.sender.sendData(instructions.getBytes());
                 }
             }

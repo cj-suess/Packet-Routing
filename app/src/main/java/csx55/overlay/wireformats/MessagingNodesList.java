@@ -53,10 +53,11 @@ public class MessagingNodesList implements Event {
 
     @Override
     public String toString() {
-        for(Tuple t : peers) {
-            return t.getEndpoint() + " ";
+        StringBuilder sb = new StringBuilder("Peers: ");
+        for(Tuple t : peers){
+            sb.append(t.getEndpoint()).append(" (weight=").append(t.getWeight()).append(") ");
         }
-        return null;
+        return sb.toString();
     }
     
 }
