@@ -25,7 +25,7 @@ public class MessagingNode implements Node {
 
     // Messaging nodes
     List<Tuple> connectionList;
-    List<Socket> openConnections;
+    List<TCPConnection> openConnections;
 
 
     public MessagingNode(String registryIP, int registryPort) {
@@ -45,7 +45,7 @@ public class MessagingNode implements Node {
         else if(event.getType() == Protocol.DEREGISTER_RESPONSE) {
             Message message = (Message) event; // downcast back to Message
             System.out.println("[MessagingNode] " + message.info);
-            if(message.statusCode == (byte)0) { registered = true; }
+            if(message.statusCode == (byte)0) { registered = false; }
         }
         else if(event.getType() == Protocol.MESSAGING_NODES_LIST) {
             MessagingNodesList conn = (MessagingNodesList) event;
@@ -57,20 +57,19 @@ public class MessagingNode implements Node {
         for(Tuple t : connectionList) {
             try {
                 Socket socket = new Socket(t.getIp(), Integer.parseInt(t.getPort()));
-                TCPSender sender = new TCPSender(socket);
-                TCPReceiverThread receiver = new TCPReceiverThread(socket, this);
-                new Thread(receiver).start();
-                openConnections.add(socket);
+                TCPConnection conn = new TCPConnection(socket, this);
+                new Thread(conn).start();
+                openConnections.add(conn);
             } catch(IOException e) {
-                System.err.println("Exception while creating new socket for node to node conneciton..." + e.getLocalizedMessage());
+                System.err.println("Failed to connect to " + t.getEndpoint() + ": " + e.getLocalizedMessage());
             }
         }
     }
 
     public void printConnectionList() {
-        System.out.println("Printing Connections for...");
-        for(Socket s : openConnections) {
-            System.out.println("Local Address: " + s.getLocalAddress() + " Connection Address: " + s.getInetAddress().getHostAddress());
+        System.out.println("Printing Connections: ");
+        for(TCPConnection conn : openConnections) {
+            System.out.println("Local: " + conn.socket.getLocalAddress() + ":" + conn.socket.getLocalPort() + "  ->  Remote: " + conn.socket.getInetAddress().getHostAddress() + ":" + conn.socket.getPort());
         }
     }
 
@@ -95,8 +94,9 @@ public class MessagingNode implements Node {
             while(true) {
                 Socket socket = serverSocket.accept();
                 System.out.println("[MessagingNode] New connection on messaging node from: " + socket.getInetAddress());
-                TCPConnection st = new TCPConnection(socket, this); 
-                new Thread(st).start();
+                TCPConnection conn = new TCPConnection(socket, this); 
+                openConnections.add(conn);
+                new Thread(conn).start();
             }
 
         } catch(IOException e) {

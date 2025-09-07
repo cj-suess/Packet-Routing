@@ -122,7 +122,7 @@ public class Registry implements Node {
             while(true) {
                 Socket socket = serverSocket.accept();
                 System.out.println("\n[Registry] New connection from: " + socket.getInetAddress().getHostAddress());
-                TCPConnection conn = new TCPConnection(socket, this); // possibly refactor? not sure if this is redundant 
+                TCPConnection conn = new TCPConnection(socket, this);
                 openConnections.add(conn);
                 new Thread(conn).start();
             }
