@@ -22,8 +22,8 @@ public class OverlayCreator {
             for(int i=0; i < n; i++) {
                 overlay.put(nodeList.get(i), new ArrayList<>());
                 for(int j=1; j <= k/2; j++) {
-                    overlay.get(nodeList.get(i)).add(new Tuple(nodeList.get((i+j) % n), 0));
-                    overlay.get(nodeList.get(i)).add(new Tuple(nodeList.get((i-j+n) % n), 0));
+                    overlay.get(nodeList.get(i)).add(new Tuple(nodeList.get((i+j) % n), new Random().nextInt(10) + 1));
+                    overlay.get(nodeList.get(i)).add(new Tuple(nodeList.get((i-j+n) % n), new Random().nextInt(10) + 1));
                 }
             }
             if(k % 2 == 1) {
