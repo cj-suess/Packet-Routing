@@ -123,8 +123,8 @@ public class Registry implements Node {
                 Socket socket = serverSocket.accept();
                 System.out.println("\n[Registry] New connection from: " + socket.getInetAddress().getHostAddress());
                 TCPConnection conn = new TCPConnection(socket, this);
-                openConnections.add(conn);
                 new Thread(conn).start();
+                openConnections.add(conn);
             }
 
         } catch(IOException e) {

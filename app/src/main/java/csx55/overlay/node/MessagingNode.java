@@ -50,10 +50,11 @@ public class MessagingNode implements Node {
         else if(event.getType() == Protocol.MESSAGING_NODES_LIST) {
             MessagingNodesList conn = (MessagingNodesList) event;
             connectionList = conn.getPeers();
+            connect();
         }
     }
 
-    public void connect(){
+    public void connect() {
         for(Tuple t : connectionList) {
             try {
                 Socket socket = new Socket(t.getIp(), Integer.parseInt(t.getPort()));
@@ -64,6 +65,7 @@ public class MessagingNode implements Node {
                 System.err.println("Failed to connect to " + t.getEndpoint() + ": " + e.getLocalizedMessage());
             }
         }
+        System.out.println("All connections are established. Number of connections: " + openConnections.size());
     }
 
     public void printConnectionList() {
@@ -95,8 +97,8 @@ public class MessagingNode implements Node {
                 Socket socket = serverSocket.accept();
                 System.out.println("[MessagingNode] New connection on messaging node from: " + socket.getInetAddress());
                 TCPConnection conn = new TCPConnection(socket, this); 
-                openConnections.add(conn);
                 new Thread(conn).start();
+                openConnections.add(conn);
             }
 
         } catch(IOException e) {
@@ -122,9 +124,6 @@ public class MessagingNode implements Node {
                         break;
                     case "node-status":
                         nodeStatus();
-                        break;
-                    case "connect":
-                        connect();
                         break;
                     case "print-connections":
                         printConnectionList();
