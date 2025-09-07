@@ -26,4 +26,12 @@ public class Tuple {
     public int getWeight() {
         return weight;
     }
+
+    public String getIp() {
+        return endpoint.substring(0, endpoint.indexOf(":"));
+    }
+
+    public String getPort() {
+        return endpoint.substring(endpoint.indexOf(":") + 1);
+    }
 }

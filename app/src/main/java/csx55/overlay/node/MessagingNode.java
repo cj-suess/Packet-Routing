@@ -2,12 +2,14 @@ package csx55.overlay.node;
 
 import csx55.overlay.transport.TCPReceiverThread;
 import csx55.overlay.transport.TCPSender;
+import csx55.overlay.util.Tuple;
 import csx55.overlay.transport.TCPConnection;
 import csx55.overlay.wireformats.*;
 import java.io.IOException;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
-import java.util.Set;
 
 public class MessagingNode implements Node {
 
@@ -24,13 +26,16 @@ public class MessagingNode implements Node {
     TCPReceiverThread registryReceiver;
 
     // Messaging nodes
-    Set<TCPConnection> openConnections;
+    List<Tuple> connectionList;
+    List<Socket> openConnections;
 
 
     public MessagingNode(String registryIP, int registryPort) {
         this.registryIP = registryIP;
         this.registryPort = registryPort;
         this.registered = false;
+        connectionList = new ArrayList<>();
+        openConnections = new ArrayList<>();
     }
 
     public void onEvent(Event event, Socket socket) {
@@ -46,7 +51,28 @@ public class MessagingNode implements Node {
         }
         else if(event.getType() == Protocol.MESSAGING_NODES_LIST) {
             MessagingNodesList conn = (MessagingNodesList) event;
-            System.out.println(conn.toString());
+            connectionList = conn.getPeers();
+        }
+    }
+
+    public synchronized void connect(){
+        for(Tuple t : connectionList) {
+            try {
+                Socket socket = new Socket(t.getIp(), Integer.parseInt(t.getPort()));
+                TCPSender sender = new TCPSender(socket);
+                TCPReceiverThread receiver = new TCPReceiverThread(socket, this);
+                new Thread(receiver).start();
+                openConnections.add(socket);
+            } catch(IOException e) {
+                System.err.println("Exception while creating new socket for node to node conneciton..." + e.getLocalizedMessage());
+            }
+        }
+    }
+
+    public void printConnectionList() {
+        System.out.println("Printing Connections...");
+        for(Socket s : openConnections) {
+            System.out.println("Local Address: " + s.getLocalAddress() + " Connection Address: " + s.getInetAddress().getHostAddress());
         }
     }
 
@@ -99,6 +125,12 @@ public class MessagingNode implements Node {
                     case "node-status":
                         nodeStatus();
                         break;
+                    case "connect":
+                        connect();
+                        break;
+                    case "print-connections":
+                        printConnectionList();
+                        break;
                     default:
                         break;
                 }
@@ -126,10 +158,6 @@ public class MessagingNode implements Node {
         } catch (Exception e) {
             System.out.println("[MessagingNode] Exception while registering node with registry...");
         }
-    }
-
-    public synchronized void connect(){
-        
     }
 
     public void deregister() {

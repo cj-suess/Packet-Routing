@@ -59,5 +59,9 @@ public class MessagingNodesList implements Event {
         }
         return sb.toString();
     }
+
+    public List<Tuple> getPeers() {
+        return peers;
+    }
     
 }
