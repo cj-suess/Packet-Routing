@@ -97,12 +97,13 @@ public class Registry implements Node {
     }
 
     private TCPSender getSender(List<TCPConnection> openConnections, Socket socket) {
+        TCPSender sender = null;
         for(TCPConnection conn : openConnections) {
             if(socket == conn.socket) {
-                return conn.sender;
+                sender = conn.sender;
             }
         }
-        return null;
+        return sender;
     }
 
     public void startRegistry() {

@@ -5,15 +5,13 @@ import csx55.overlay.transport.TCPSender;
 import csx55.overlay.util.Tuple;
 import csx55.overlay.transport.TCPConnection;
 import csx55.overlay.wireformats.*;
-import java.io.IOException;
+import java.io.*;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class MessagingNode implements Node {
 
-    boolean registered; // make atomic?
+    private volatile boolean registered;
 
     ServerSocket serverSocket;
     int serverPort;
@@ -47,7 +45,7 @@ public class MessagingNode implements Node {
         else if(event.getType() == Protocol.DEREGISTER_RESPONSE) {
             Message message = (Message) event; // downcast back to Message
             System.out.println("[MessagingNode] " + message.info);
-            if(message.statusCode == (byte)0) { registered = false; }
+            if(message.statusCode == (byte)0) { registered = true; }
         }
         else if(event.getType() == Protocol.MESSAGING_NODES_LIST) {
             MessagingNodesList conn = (MessagingNodesList) event;
@@ -55,7 +53,7 @@ public class MessagingNode implements Node {
         }
     }
 
-    public synchronized void connect(){
+    public void connect(){
         for(Tuple t : connectionList) {
             try {
                 Socket socket = new Socket(t.getIp(), Integer.parseInt(t.getPort()));
@@ -70,7 +68,7 @@ public class MessagingNode implements Node {
     }
 
     public void printConnectionList() {
-        System.out.println("Printing Connections...");
+        System.out.println("Printing Connections for...");
         for(Socket s : openConnections) {
             System.out.println("Local Address: " + s.getLocalAddress() + " Connection Address: " + s.getInetAddress().getHostAddress());
         }
@@ -87,7 +85,7 @@ public class MessagingNode implements Node {
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> { // needed if the terminal crashes so the node deregisters. not sure if I can catch it elsewhere
                 try {
-                    if(registered) { deregister(); }
+                    if(registered == true) { deregister(); }
                     serverSocket.close();
                 } catch(IOException e) {
                     System.err.println("Exception while trying to clean up after sudden termination...");
