@@ -2,16 +2,16 @@ package csx55.overlay.node;
 
 import csx55.overlay.transport.TCPReceiverThread;
 import csx55.overlay.transport.TCPSender;
+import csx55.overlay.util.Tuple;
 import csx55.overlay.transport.TCPConnection;
 import csx55.overlay.wireformats.*;
-import java.io.IOException;
+import java.io.*;
 import java.net.*;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 
 public class MessagingNode implements Node {
 
-    boolean registered; // make atomic?
+    private volatile boolean registered;
 
     ServerSocket serverSocket;
     int serverPort;
@@ -24,13 +24,16 @@ public class MessagingNode implements Node {
     TCPReceiverThread registryReceiver;
 
     // Messaging nodes
-    Set<TCPConnection> openConnections;
+    List<Tuple> connectionList;
+    List<TCPConnection> openConnections;
 
 
     public MessagingNode(String registryIP, int registryPort) {
         this.registryIP = registryIP;
         this.registryPort = registryPort;
         this.registered = false;
+        connectionList = new ArrayList<>();
+        openConnections = new ArrayList<>();
     }
 
     public void onEvent(Event event, Socket socket) {
@@ -46,7 +49,27 @@ public class MessagingNode implements Node {
         }
         else if(event.getType() == Protocol.MESSAGING_NODES_LIST) {
             MessagingNodesList conn = (MessagingNodesList) event;
-            System.out.println(conn.toString());
+            connectionList = conn.getPeers();
+        }
+    }
+
+    public void connect(){
+        for(Tuple t : connectionList) {
+            try {
+                Socket socket = new Socket(t.getIp(), Integer.parseInt(t.getPort()));
+                TCPConnection conn = new TCPConnection(socket, this);
+                new Thread(conn).start();
+                openConnections.add(conn);
+            } catch(IOException e) {
+                System.err.println("Failed to connect to " + t.getEndpoint() + ": " + e.getLocalizedMessage());
+            }
+        }
+    }
+
+    public void printConnectionList() {
+        System.out.println("Printing Connections: ");
+        for(TCPConnection conn : openConnections) {
+            System.out.println("Local: " + conn.socket.getLocalAddress() + ":" + conn.socket.getLocalPort() + "  ->  Remote: " + conn.socket.getInetAddress().getHostAddress() + ":" + conn.socket.getPort());
         }
     }
 
@@ -61,7 +84,7 @@ public class MessagingNode implements Node {
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> { // needed if the terminal crashes so the node deregisters. not sure if I can catch it elsewhere
                 try {
-                    if(registered) { deregister(); }
+                    if(registered == true) { deregister(); }
                     serverSocket.close();
                 } catch(IOException e) {
                     System.err.println("Exception while trying to clean up after sudden termination...");
@@ -71,8 +94,9 @@ public class MessagingNode implements Node {
             while(true) {
                 Socket socket = serverSocket.accept();
                 System.out.println("[MessagingNode] New connection on messaging node from: " + socket.getInetAddress());
-                TCPConnection st = new TCPConnection(socket, this); 
-                new Thread(st).start();
+                TCPConnection conn = new TCPConnection(socket, this); 
+                openConnections.add(conn);
+                new Thread(conn).start();
             }
 
         } catch(IOException e) {
@@ -98,6 +122,12 @@ public class MessagingNode implements Node {
                         break;
                     case "node-status":
                         nodeStatus();
+                        break;
+                    case "connect":
+                        connect();
+                        break;
+                    case "print-connections":
+                        printConnectionList();
                         break;
                     default:
                         break;
@@ -126,10 +156,6 @@ public class MessagingNode implements Node {
         } catch (Exception e) {
             System.out.println("[MessagingNode] Exception while registering node with registry...");
         }
-    }
-
-    public synchronized void connect(){
-        
     }
 
     public void deregister() {
