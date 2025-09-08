@@ -128,7 +128,7 @@ public class Registry implements Node {
             }
 
         } catch(IOException e) {
-            System.out.println("[Registry] Exception while starting registry node..." + e.getMessage());
+            System.out.println("[Registry] Exception in registry node loop..." + e.getMessage());
         }
     }
 
@@ -158,6 +158,9 @@ public class Registry implements Node {
                             connectionMap = oc.filter();
                             sendConnections();
                         }
+                        break;
+                    case "list-weights":
+                        listWeights();
                         break;
                     case "print-connections":
                         printConnections();
@@ -212,6 +215,14 @@ public class Registry implements Node {
     public void printConnectionMap() {
         for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()){
             System.out.println(entry);
+        }
+    }
+
+    public void listWeights() {
+        for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()){
+            for(Tuple t : entry.getValue()){
+                System.out.println(entry.getKey() + ", " + t);
+            }
         }
     }
 

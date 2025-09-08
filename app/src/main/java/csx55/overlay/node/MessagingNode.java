@@ -8,6 +8,7 @@ import csx55.overlay.wireformats.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MessagingNode implements Node {
 
@@ -25,7 +26,7 @@ public class MessagingNode implements Node {
 
     // Messaging nodes
     List<Tuple> connectionList;
-    List<TCPConnection> openConnections;
+    Map<String, TCPConnection> openConnections;
 
 
     public MessagingNode(String registryIP, int registryPort) {
@@ -33,7 +34,7 @@ public class MessagingNode implements Node {
         this.registryPort = registryPort;
         this.registered = false;
         connectionList = new ArrayList<>();
-        openConnections = Collections.synchronizedList(new ArrayList<>());
+        openConnections = new ConcurrentHashMap<>();
     }
 
     public void onEvent(Event event, Socket socket) {
@@ -58,11 +59,16 @@ public class MessagingNode implements Node {
     public void connect(int numConnections) {
         System.out.printf("Received %d connections from Registry...\n", numConnections);
         for(Tuple t : connectionList) {
+            String remoteNodeID = t.getEndpoint();
             try {
                 Socket socket = new Socket(t.getIp(), Integer.parseInt(t.getPort()));
                 TCPConnection conn = new TCPConnection(socket, this);
                 new Thread(conn).start();
-                openConnections.add(conn);
+                openConnections.put(remoteNodeID, conn);
+                // send initial message with ip/server port so the receiving node can map the TCPConnection to it
+                String localNodeID = InetAddress.getLocalHost().getHostAddress() + ":" + serverPort;
+                Message message = new Message(Protocol.NODE_ID, (byte)0, localNodeID);
+                conn.sender.sendData(message.getBytes());
             } catch(IOException e) {
                 System.err.println("Failed to connect to " + t.getEndpoint() + ": " + e.getLocalizedMessage());
             }
@@ -72,8 +78,8 @@ public class MessagingNode implements Node {
 
     public void printConnectionList() {
         System.out.println("Printing Connections: ");
-        for(TCPConnection conn : openConnections) {
-            System.out.println("Local: " + conn.socket.getLocalAddress() + ":" + serverPort + "  ->  Remote: " + conn.socket.getInetAddress().getHostAddress() + ":" + conn.socket.getPort());
+        for(Map.Entry<String, TCPConnection> entry : openConnections.entrySet()) {
+            System.out.println("Local: " + entry.getValue().socket.getLocalAddress() + ":" + serverPort + "  ->  Remote: " + entry.getValue().socket.getInetAddress().getHostAddress() + ":" + entry.getValue().socket.getPort());
         }
     }
 
