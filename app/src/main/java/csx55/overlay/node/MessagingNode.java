@@ -73,7 +73,7 @@ public class MessagingNode implements Node {
     public void printConnectionList() {
         System.out.println("Printing Connections: ");
         for(TCPConnection conn : openConnections) {
-            System.out.println("Local: " + conn.socket.getLocalAddress() + ":" + conn.socket.getLocalPort() + "  ->  Remote: " + conn.socket.getInetAddress().getHostAddress() + ":" + conn.socket.getPort());
+            System.out.println("Local: " + conn.socket.getLocalAddress() + ":" + serverPort + "  ->  Remote: " + conn.socket.getInetAddress().getHostAddress() + ":" + conn.socket.getPort());
         }
     }
 

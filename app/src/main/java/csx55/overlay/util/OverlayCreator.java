@@ -22,21 +22,22 @@ public class OverlayCreator {
             for(int i=0; i < n; i++) {
                 overlay.put(nodeList.get(i), new ArrayList<>());
                 for(int j=1; j <= k/2; j++) {
-                    overlay.get(nodeList.get(i)).add(new Tuple(nodeList.get((i+j) % n), new Random().nextInt(10) + 1));
-                    overlay.get(nodeList.get(i)).add(new Tuple(nodeList.get((i-j+n) % n), new Random().nextInt(10) + 1));
+                    overlay.get(nodeList.get(i)).add(new Tuple(nodeList.get((i+j) % n), (new Random().nextInt(9)) + 1));
+                    overlay.get(nodeList.get(i)).add(new Tuple(nodeList.get((i-j+n) % n), (new Random().nextInt(9)) + 1));
                 }
             }
             if(k % 2 == 1) {
                  for(int i = 0; i < nodeList.size(); i++) {
                     int j = (i + n/2) % n;
-                    overlay.get(nodeList.get(i)).add(new Tuple(nodeList.get(j), 0));
+                    overlay.get(nodeList.get(i)).add(new Tuple(nodeList.get(j), (new Random().nextInt(9)) + 1));
                 }
             }
             System.out.println("Overlay build complete...");
+            return overlay;
         } else {
             System.err.println("[Registry] Error. Cannot create overlay with current state.");
         }
-        return overlay;
+        return null;
     }
 
     // filter method before sending connection requests

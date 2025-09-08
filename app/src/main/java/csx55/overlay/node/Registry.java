@@ -154,9 +154,10 @@ public class Registry implements Node {
                         }
                         OverlayCreator oc = new OverlayCreator(registeredNodes, connections);
                         overlay = oc.build();
-                        connectionMap = oc.filter();
-                        // send connection instructions to messaging nodes
-                        sendConnections();
+                        if(overlay != null) {
+                            connectionMap = oc.filter();
+                            sendConnections();
+                        }
                         break;
                     case "print-connections":
                         printConnections();
@@ -204,11 +205,7 @@ public class Registry implements Node {
 
     public void printOverlay() {
         for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()) {
-            System.out.print("Messaging Node: " + entry.getKey() + " [Connected nodes:");
-            for(Tuple t : entry.getValue()) {
-                System.out.print(" " + t.getEndpoint());
-            }
-            System.out.println("]");
+            System.out.println(entry);
         }
     }
 
