@@ -33,7 +33,7 @@ public class MessagingNode implements Node {
         this.registryPort = registryPort;
         this.registered = false;
         connectionList = new ArrayList<>();
-        openConnections = new ArrayList<>();
+        openConnections = Collections.synchronizedList(new ArrayList<>());
     }
 
     public void onEvent(Event event, Socket socket) {
@@ -50,11 +50,13 @@ public class MessagingNode implements Node {
         else if(event.getType() == Protocol.MESSAGING_NODES_LIST) {
             MessagingNodesList conn = (MessagingNodesList) event;
             connectionList = conn.getPeers();
-            connect();
+            connect(conn.numConnections);
+            System.out.printf("setup completed with %d connections\n", conn.numConnections);
         }
     }
 
-    public void connect() {
+    public void connect(int numConnections) {
+        System.out.printf("Received %d connections from Registry...\n", numConnections);
         for(Tuple t : connectionList) {
             try {
                 Socket socket = new Socket(t.getIp(), Integer.parseInt(t.getPort()));
@@ -65,7 +67,7 @@ public class MessagingNode implements Node {
                 System.err.println("Failed to connect to " + t.getEndpoint() + ": " + e.getLocalizedMessage());
             }
         }
-        System.out.println("All connections are established. Number of connections: " + openConnections.size());
+        System.out.println("All connections are established. Number of connections: " + numConnections);
     }
 
     public void printConnectionList() {

@@ -32,15 +32,16 @@ public class OverlayCreator {
                     overlay.get(nodeList.get(i)).add(new Tuple(nodeList.get(j), 0));
                 }
             }
+            System.out.println("Overlay build complete...");
         } else {
             System.err.println("[Registry] Error. Cannot create overlay with current state.");
         }
-        System.out.printf("setup completed with %d connections\n", k);
         return overlay;
     }
 
     // filter method before sending connection requests
     public Map<String, List<Tuple>> filter() {
+        System.out.println("Beginning overlay filtering...");
         Map<String, List<Tuple>> connectionMap = new HashMap<>();
         for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()){
             List<Tuple> filtered = new ArrayList<>();
