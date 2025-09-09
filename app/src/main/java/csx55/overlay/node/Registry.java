@@ -128,7 +128,7 @@ public class Registry implements Node {
             }
 
         } catch(IOException e) {
-            System.out.println("[Registry] Exception while starting registry node..." + e.getMessage());
+            System.out.println("[Registry] Exception in registry node loop..." + e.getMessage());
         }
     }
 
@@ -154,9 +154,16 @@ public class Registry implements Node {
                         }
                         OverlayCreator oc = new OverlayCreator(registeredNodes, connections);
                         overlay = oc.build();
-                        connectionMap = oc.filter();
-                        // send connection instructions to messaging nodes
-                        sendConnections();
+                        if(overlay != null) {
+                            connectionMap = oc.filter();
+                            sendConnections();
+                        }
+                        break;
+                    case "list-weights":
+                        listWeights();
+                        break;
+                    case "send-overlay-link-weights":
+                        System.out.println("link weights assigned");
                         break;
                     case "print-connections":
                         printConnections();
@@ -204,17 +211,21 @@ public class Registry implements Node {
 
     public void printOverlay() {
         for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()) {
-            System.out.print("Messaging Node: " + entry.getKey() + " [Connected nodes:");
-            for(Tuple t : entry.getValue()) {
-                System.out.print(" " + t.getEndpoint());
-            }
-            System.out.println("]");
+            System.out.println(entry);
         }
     }
 
     public void printConnectionMap() {
         for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()){
             System.out.println(entry);
+        }
+    }
+
+    public void listWeights() {
+        for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()){
+            for(Tuple t : entry.getValue()){
+                System.out.println(entry.getKey() + ", " + t);
+            }
         }
     }
 

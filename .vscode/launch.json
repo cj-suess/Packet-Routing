@@ -1,0 +1,66 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "type": "java",
+            "name": "Registry",
+            "request": "launch",
+            "mainClass": "csx55.overlay.node.Registry",
+            "projectName": "app",
+            "args": "5000",
+            "console": "integratedTerminal",
+            "stopOnEntry": false
+        },
+        {
+            "type": "java",
+            "name": "MessagingNode1",
+            "request": "launch",
+            "mainClass": "csx55.overlay.node.MessagingNode",
+            "projectName": "app",
+            "args": "grouper 5000",
+            "console": "integratedTerminal",
+            "stopOnEntry": false
+        },
+        {
+            "type": "java",
+            "name": "MessagingNode2",
+            "request": "launch",
+            "mainClass": "csx55.overlay.node.MessagingNode",
+            "projectName": "app",
+            "args": "grouper 5000",
+            "console": "integratedTerminal",
+            "stopOnEntry": false
+        },
+        {
+            "type": "java",
+            "name": "MessagingNode3",
+            "request": "launch",
+            "mainClass": "csx55.overlay.node.MessagingNode",
+            "projectName": "app",
+            "args": "grouper 5000",
+            "console": "integratedTerminal",
+            "stopOnEntry": false
+        },
+        {
+            "type": "java",
+            "name": "MessagingNode4",
+            "request": "launch",
+            "mainClass": "csx55.overlay.node.MessagingNode",
+            "projectName": "app",
+            "args": "grouper 5000",
+            "console": "integratedTerminal",
+            "stopOnEntry": false
+        }
+    ],
+    "compounds": [
+    {
+      "name": "Run Nodes",
+      "configurations": ["Registry", "MessagingNode1", "MessagingNode2", "MessagingNode3", "MessagingNode4"],
+      "stopAll": true
+    }
+  ]
+}
