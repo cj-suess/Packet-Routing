@@ -12,4 +12,5 @@ public interface Protocol {
     int PULL_TRAFFIC_SUMMARY = 8;
     int TRAFFIC_SUMMARY = 9;
     int NODE_ID = 10;
+    int OVERLAY = 11;
 }
