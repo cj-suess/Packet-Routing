@@ -164,6 +164,7 @@ public class Registry implements Node {
                         listWeights();
                         break;
                     case "send-overlay-link-weights":
+                        sendLinkWeights();
                         System.out.println("link weights assigned");
                         break;
                     case "print-connections":
@@ -181,6 +182,13 @@ public class Registry implements Node {
             }
         } catch(Exception e) {
             System.err.println("[Registry] Exception in terminal reader...");
+        }
+    }
+    
+    public void sendLinkWeights() throws IOException {
+        LinkWeights lw = new LinkWeights(Protocol.LINK_WEIGHTS, 0);
+        for(TCPConnection conn : openConnections) {
+            conn.sender.sendData(lw.getBytes());
         }
     }
 

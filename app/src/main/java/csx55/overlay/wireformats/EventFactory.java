@@ -138,6 +138,12 @@ public class EventFactory {
                     dis.close();
                     Overlay overlayMessage = new Overlay(Protocol.OVERLAY, numNodes, numConnections, overlay);
                     return overlayMessage;
+                case Protocol.LINK_WEIGHTS:
+                    int dummyData = dis.readInt();
+                    bais.close();
+                    dis.close();
+                    LinkWeights lw = new LinkWeights(messageType, dummyData);
+                    return lw;
                 default:
                     throw new IllegalArgumentException("[EventFactory] Unknown protocol passed to EventFactory...");
             }

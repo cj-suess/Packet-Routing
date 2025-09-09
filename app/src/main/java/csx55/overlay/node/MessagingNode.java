@@ -70,6 +70,9 @@ public class MessagingNode implements Node {
             Overlay o = (Overlay) event;
             overlay = o.overlay;
         }
+        else if(event.getType() == Protocol.LINK_WEIGHTS) {
+            System.out.println("Link weights received and processed. Ready to send messages.");
+        }
     }
 
     public void connect(int numConnections) {
