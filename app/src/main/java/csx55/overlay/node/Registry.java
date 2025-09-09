@@ -12,10 +12,11 @@ import csx55.overlay.wireformats.*;
 
 public class Registry implements Node {
 
-    public int port;
-    public ServerSocket serverSocket;
+    int port;
+    ServerSocket serverSocket;
 
     List<TCPConnection> openConnections;
+    int connections = 0;
 
     Set<String> registeredNodes;
     Map<String, List<Tuple>> overlay; // grab messaging node ip and match with correct socket in openConnections
@@ -148,7 +149,6 @@ public class Registry implements Node {
                         printRegistry();
                         break;
                     case "setup-overlay":
-                        int connections = 0;
                         if(splitCommand.length > 1) {
                             connections = Integer.parseInt(splitCommand[1]);
                         }
@@ -156,6 +156,7 @@ public class Registry implements Node {
                         overlay = oc.build();
                         if(overlay != null) {
                             connectionMap = oc.filter();
+                            sendOverlay();
                             sendConnections();
                         }
                         break;
@@ -181,6 +182,16 @@ public class Registry implements Node {
         } catch(Exception e) {
             System.err.println("[Registry] Exception in terminal reader...");
         }
+    }
+
+    public void sendOverlay() throws IOException {
+        System.out.println("[Registry] Sending overlay to messaging nodes...");
+        System.out.println("Num connections: " + overlay.values().size());
+        Overlay overlayMessage = new Overlay(Protocol.OVERLAY, registeredNodes.size(), connections, overlay);
+        for(TCPConnection conn : openConnections) {
+            conn.sender.sendData(overlayMessage.getBytes());
+        }
+
     }
 
     public void sendConnections() throws IOException {

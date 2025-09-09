@@ -4,7 +4,9 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import csx55.overlay.util.Tuple;
 
@@ -114,6 +116,28 @@ public class EventFactory {
                     dis.close();
                     Message idMessage = new Message(messageType, statusCode, info);
                     return idMessage;
+                case Protocol.OVERLAY:
+                    // decode data into Overlay event
+                    System.out.println("\tDecoding data into a Overlay object...");
+                    Map<String, List<Tuple>> overlay = new HashMap<>();
+                    int numNodes = dis.readInt();
+                    numConnections = dis.readInt();
+                    for(int i = 0; i < numNodes; i++) {
+                        int idLength = dis.readInt();
+                        byte[] idBytes = new byte[idLength];
+                        dis.readFully(idBytes);
+                        String id = new String(idBytes);
+                        List<Tuple> list = new ArrayList<>();
+                        for(int j = 0; j < numConnections; j++) {
+                            Tuple t = createPeer(dis, info, infoLength, infoBytes, weight);
+                            list.add(t);
+                        }
+                        overlay.put(id, list);
+                    }
+                    bais.close();
+                    dis.close();
+                    Overlay overlayMessage = new Overlay(Protocol.OVERLAY, numNodes, numConnections, overlay);
+                    return overlayMessage;
                 default:
                     throw new IllegalArgumentException("[EventFactory] Unknown protocol passed to EventFactory...");
             }

@@ -29,6 +29,9 @@ public class MessagingNode implements Node {
     Map<String, TCPConnection> openConnections;
     Map<Socket, TCPConnection> socketToConn;
 
+    // Overlay
+    Map<String, List<Tuple>> overlay;
+
 
     public MessagingNode(String registryIP, int registryPort) {
         this.registryIP = registryIP;
@@ -37,6 +40,7 @@ public class MessagingNode implements Node {
         connectionList = new ArrayList<>();
         openConnections = new ConcurrentHashMap<>();
         socketToConn = new ConcurrentHashMap<>();
+        overlay = new HashMap<>();
     }
 
     public void onEvent(Event event, Socket socket) {
@@ -61,6 +65,10 @@ public class MessagingNode implements Node {
             String remoteNodeID = message.info;
             TCPConnection conn = socketToConn.get(socket);
             openConnections.put(remoteNodeID, conn);
+        }
+        else if(event.getType() == Protocol.OVERLAY) {
+            Overlay o = (Overlay) event;
+            overlay = o.overlay;
         }
     }
 
@@ -89,6 +97,12 @@ public class MessagingNode implements Node {
         System.out.println("Printing My Connections: ");
         for(Map.Entry<String, TCPConnection> entry : openConnections.entrySet()) {
             System.out.println("Connected NodeID: " + entry.getKey());
+        }
+    }
+
+    public void printOverlay() {
+        for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()) {
+            System.out.println(entry);
         }
     }
 
@@ -144,6 +158,9 @@ public class MessagingNode implements Node {
                         break;
                     case "print-connections":
                         printConnectionList();
+                        break;
+                    case "print-overlay":
+                        printOverlay();
                         break;
                     default:
                         break;
