@@ -27,6 +27,7 @@ public class MessagingNode implements Node {
     // Messaging nodes
     List<Tuple> connectionList;
     Map<String, TCPConnection> openConnections;
+    Map<Socket, TCPConnection> socketToConn;
 
 
     public MessagingNode(String registryIP, int registryPort) {
@@ -35,6 +36,7 @@ public class MessagingNode implements Node {
         this.registered = false;
         connectionList = new ArrayList<>();
         openConnections = new ConcurrentHashMap<>();
+        socketToConn = new ConcurrentHashMap<>();
     }
 
     public void onEvent(Event event, Socket socket) {
@@ -54,6 +56,14 @@ public class MessagingNode implements Node {
             connect(conn.numConnections);
             System.out.printf("setup completed with %d connections\n", conn.numConnections);
         }
+        else if(event.getType() == Protocol.NODE_ID){
+            Message message = (Message) event;
+            String remoteNodeID = message.info;
+            if(socket != null) {
+                TCPConnection conn = socketToConn.get(socket);
+                openConnections.put(remoteNodeID, conn);
+            }
+        }
     }
 
     public void connect(int numConnections) {
@@ -63,12 +73,13 @@ public class MessagingNode implements Node {
             try {
                 Socket socket = new Socket(t.getIp(), Integer.parseInt(t.getPort()));
                 TCPConnection conn = new TCPConnection(socket, this);
-                new Thread(conn).start();
+                socketToConn.put(socket, conn);
                 openConnections.put(remoteNodeID, conn);
+                new Thread(conn).start();
                 // send initial message with ip/server port so the receiving node can map the TCPConnection to it
                 String localNodeID = InetAddress.getLocalHost().getHostAddress() + ":" + serverPort;
-                Message message = new Message(Protocol.NODE_ID, (byte)0, localNodeID);
-                conn.sender.sendData(message.getBytes());
+                Message idMessage = new Message(Protocol.NODE_ID, (byte)0, localNodeID);
+                conn.sender.sendData(idMessage.getBytes());
             } catch(IOException e) {
                 System.err.println("Failed to connect to " + t.getEndpoint() + ": " + e.getLocalizedMessage());
             }
@@ -79,7 +90,7 @@ public class MessagingNode implements Node {
     public void printConnectionList() {
         System.out.println("Printing Connections: ");
         for(Map.Entry<String, TCPConnection> entry : openConnections.entrySet()) {
-            System.out.println("Local: " + entry.getValue().socket.getLocalAddress() + ":" + serverPort + "  ->  Remote: " + entry.getValue().socket.getInetAddress().getHostAddress() + ":" + entry.getValue().socket.getPort());
+            System.out.println("Local: " + entry.getKey() + "  ->  Remote: " + entry.getValue().socket.getInetAddress().getHostAddress() + ":" + entry.getValue().socket.getPort());
         }
     }
 
@@ -105,8 +116,8 @@ public class MessagingNode implements Node {
                 Socket socket = serverSocket.accept();
                 System.out.println("[MessagingNode] New connection on messaging node from: " + socket.getInetAddress());
                 TCPConnection conn = new TCPConnection(socket, this); 
+                socketToConn.put(socket, conn);
                 new Thread(conn).start();
-                openConnections.add(conn);
             }
 
         } catch(IOException e) {

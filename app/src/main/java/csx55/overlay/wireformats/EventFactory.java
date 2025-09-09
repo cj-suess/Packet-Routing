@@ -102,6 +102,18 @@ public class EventFactory {
                     dis.close();
                     MessagingNodesList node_list = new MessagingNodesList(messageType, numConnections, peers);
                     return node_list;
+                case Protocol.NODE_ID:
+                    // decode data into Message event
+                    System.out.println("\tDecoding data into a Message object...");
+                    statusCode = dis.readByte();
+                    infoLength = dis.readInt();
+                    infoBytes = new byte[infoLength];
+                    dis.readFully(infoBytes);
+                    info = new String(infoBytes);
+                    bais.close();
+                    dis.close();
+                    Message idMessage = new Message(messageType, statusCode, info);
+                    return idMessage;
                 default:
                     throw new IllegalArgumentException("[EventFactory] Unknown protocol passed to EventFactory...");
             }

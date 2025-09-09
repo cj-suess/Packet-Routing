@@ -162,6 +162,9 @@ public class Registry implements Node {
                     case "list-weights":
                         listWeights();
                         break;
+                    case "send-overlay-link-weights":
+                        System.out.println("link weights assigned");
+                        break;
                     case "print-connections":
                         printConnections();
                         break;
