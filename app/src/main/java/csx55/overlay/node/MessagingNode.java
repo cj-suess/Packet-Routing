@@ -59,18 +59,16 @@ public class MessagingNode implements Node {
         else if(event.getType() == Protocol.NODE_ID){
             Message message = (Message) event;
             String remoteNodeID = message.info;
-            if(socket != null) {
-                TCPConnection conn = socketToConn.get(socket);
-                openConnections.put(remoteNodeID, conn);
-            }
+            TCPConnection conn = socketToConn.get(socket);
+            openConnections.put(remoteNodeID, conn);
         }
     }
 
     public void connect(int numConnections) {
         System.out.printf("Received %d connections from Registry...\n", numConnections);
         for(Tuple t : connectionList) {
-            String remoteNodeID = t.getEndpoint();
             try {
+                String remoteNodeID = t.getEndpoint();
                 Socket socket = new Socket(t.getIp(), Integer.parseInt(t.getPort()));
                 TCPConnection conn = new TCPConnection(socket, this);
                 socketToConn.put(socket, conn);
@@ -88,9 +86,9 @@ public class MessagingNode implements Node {
     }
 
     public void printConnectionList() {
-        System.out.println("Printing Connections: ");
+        System.out.println("Printing My Connections: ");
         for(Map.Entry<String, TCPConnection> entry : openConnections.entrySet()) {
-            System.out.println("Local: " + entry.getKey() + "  ->  Remote: " + entry.getValue().socket.getInetAddress().getHostAddress() + ":" + entry.getValue().socket.getPort());
+            System.out.println("Connected NodeID: " + entry.getKey());
         }
     }
 
@@ -160,7 +158,7 @@ public class MessagingNode implements Node {
         try {
             if(registrySender == null) {
                 registrySocket = new Socket(registryIP, registryPort);
-                System.out.println("[MessagingNode] Connecting to registry...\n" + "\tLocal Port: " + registrySocket.getLocalPort() +"\n" + "\tRemote Port: " + registryPort);
+                System.out.println("[MessagingNode] Connecting to registry...");
                 Register registerRequest = new Register(Protocol.REGISTER_REQUEST, registrySocket.getLocalAddress().getHostAddress(), serverPort);
                 registrySender = new TCPSender(registrySocket);
                 registryReceiver = new TCPReceiverThread(registrySocket, this);
