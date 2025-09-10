@@ -8,12 +8,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import csx55.overlay.node.MessagingNode;
 import csx55.overlay.util.Tuple;
+import java.util.logging.*;
 
 public class EventFactory {
 
     byte[] data;
     int messageType;
+
+    private Logger LOG = Logger.getLogger(EventFactory.class.getName());
 
     public EventFactory(byte[] data) {
         this.data = data;
@@ -41,12 +45,12 @@ public class EventFactory {
             List<Tuple> peers = new ArrayList<>();
             int weight = 0;
 
-            System.out.println("[EventFactory] New event being created...");
+            LOG.info("New event being created...");
 
             switch (messageType) {
                 case Protocol.REGISTER_REQUEST:
                     // decode data into Register event
-                    System.out.println("\tDecoding data into a Register object...");
+                    LOG.info("\tDecoding data into a Register object...");
                     ipLength = dis.readInt();
                     ipBytes = new byte[ipLength];
                     dis.readFully(ipBytes);
@@ -58,7 +62,7 @@ public class EventFactory {
                     return register_request;
                 case Protocol.DEREGISTER_REQUEST:
                     // decode into Deregister event
-                    System.out.println("\tDecoding data into a Deregister object...");
+                    LOG.info("\tDecoding data into a Deregister object...");
                     ipLength = dis.readInt();
                     ipBytes = new byte[ipLength];
                     dis.readFully(ipBytes);
@@ -70,7 +74,7 @@ public class EventFactory {
                     return deregister_request;
                 case Protocol.REGISTER_RESPONSE:
                     // decode data into Message event
-                    System.out.println("\tDecoding data into a Message object...");
+                    LOG.info("\tDecoding data into a Message object...");
                     statusCode = dis.readByte();
                     infoLength = dis.readInt();
                     infoBytes = new byte[infoLength];
@@ -82,7 +86,7 @@ public class EventFactory {
                     return register_response;
                 case Protocol.DEREGISTER_RESPONSE:
                     // decode data into Message event
-                    System.out.println("\tDecoding data into a Message object...");
+                    LOG.info("\tDecoding data into a Message object...");
                     statusCode = dis.readByte();
                     infoLength = dis.readInt();
                     infoBytes = new byte[infoLength];
@@ -94,7 +98,7 @@ public class EventFactory {
                     return deregister_response;
                 case Protocol.MESSAGING_NODES_LIST:
                     // decode data into MessagingNodesList event
-                    System.out.println("\tDecoding data into a MessagingNodesList object...");
+                    LOG.info("\tDecoding data into a MessagingNodesList object...");
                     numConnections = dis.readInt();
                     for(int i = 0; i < numConnections; i++) {
                         Tuple t = createPeer(dis, info, infoLength, infoBytes, weight);
@@ -106,7 +110,7 @@ public class EventFactory {
                     return node_list;
                 case Protocol.NODE_ID:
                     // decode data into Message event
-                    System.out.println("\tDecoding data into a Message object...");
+                    LOG.info("\tDecoding data into a Message object...");
                     statusCode = dis.readByte();
                     infoLength = dis.readInt();
                     infoBytes = new byte[infoLength];
@@ -118,7 +122,7 @@ public class EventFactory {
                     return idMessage;
                 case Protocol.OVERLAY:
                     // decode data into Overlay event
-                    System.out.println("\tDecoding data into a Overlay object...");
+                    LOG.info("\tDecoding data into a Overlay object...");
                     Map<String, List<Tuple>> overlay = new HashMap<>();
                     int numNodes = dis.readInt();
                     numConnections = dis.readInt();
@@ -145,10 +149,10 @@ public class EventFactory {
                     LinkWeights lw = new LinkWeights(messageType, dummyData);
                     return lw;
                 default:
-                    throw new IllegalArgumentException("[EventFactory] Unknown protocol passed to EventFactory...");
+                    LOG.warning("Unknown protocol passed to EventFactory...");
             }
         } catch(IOException e) {
-            System.out.println("[EventFactory] Exception while decoding data...");
+            LOG.info("Exception while decoding data...");
         }
         return null;
     }

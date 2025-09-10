@@ -4,12 +4,16 @@ import java.io.IOException;
 import java.net.Socket;
 import csx55.overlay.node.Node;
 
+import java.util.logging.*;
+
 public class TCPConnection implements Runnable {
 
     public Socket socket;
     public TCPReceiverThread receiver;
     public TCPSender sender;
     public Node node;
+
+    private Logger LOG = Logger.getLogger(TCPConnection.class.getName());
 
     public TCPConnection(Socket socket, Node node) throws IOException {
         this.socket = socket;
@@ -23,7 +27,7 @@ public class TCPConnection implements Runnable {
         try {
             new Thread(receiver).start();
         } catch (Exception e) {
-            System.out.println(e.getLocalizedMessage());
+            LOG.warning(e.getLocalizedMessage());
         } 
     }
 

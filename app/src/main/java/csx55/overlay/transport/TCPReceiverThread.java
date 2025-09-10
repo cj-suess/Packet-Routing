@@ -7,12 +7,15 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.logging.*;
 
 public class TCPReceiverThread implements Runnable {
 
     private Socket socket;
     private DataInputStream din;
     private Node node;
+
+    private Logger LOG = Logger.getLogger(TCPReceiverThread.class.getName());
 
     public TCPReceiverThread(Socket socket, Node node) throws IOException {
         this.socket = socket;
@@ -32,10 +35,10 @@ public class TCPReceiverThread implements Runnable {
                 Event decodedEvent = ef.createEvent();
                 node.onEvent(decodedEvent, socket);
             } catch(SocketException soe) {
-                System.out.println("[TCPReceiverThread] Socket exception caught reading data..." + soe.getLocalizedMessage());
+                LOG.warning("Socket exception caught reading data..." + soe.getLocalizedMessage());
                 break;
             } catch(IOException ioe) {
-                System.out.println("[TCPReceiverThread] IO exception caught reading data..." + ioe.getLocalizedMessage());
+                LOG.warning("IO exception caught reading data..." + ioe.getLocalizedMessage());
                 break;
             } 
         }
