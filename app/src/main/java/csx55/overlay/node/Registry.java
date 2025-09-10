@@ -164,6 +164,7 @@ public class Registry implements Node {
                             connectionMap = oc.filter(overlay);
                             sendOverlay();
                             sendConnections();
+                            System.out.printf("setup completed with %d connections", connections);
                         }
                         break;
                     case "list-weights":

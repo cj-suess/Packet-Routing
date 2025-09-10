@@ -68,7 +68,6 @@ public class MessagingNode implements Node {
             MessagingNodesList conn = (MessagingNodesList) event;
             connectionList = conn.getPeers();
             connect(conn.numConnections);
-            System.out.printf("setup completed with %d connections\n", conn.numConnections);
         }
         else if(event.getType() == Protocol.NODE_ID){
             Message message = (Message) event;
