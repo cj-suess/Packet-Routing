@@ -224,7 +224,7 @@ public class MessagingNode implements Node {
 
     public static void main(String[] args) {
 
-        LogConfig.init(Level.WARNING);
+        LogConfig.init(Level.INFO);
 
         MessagingNode node = new MessagingNode(args[0], Integer.parseInt(args[1]));
         new Thread(node::startNode, "Node-" + node.nodeID + "-Server").start();

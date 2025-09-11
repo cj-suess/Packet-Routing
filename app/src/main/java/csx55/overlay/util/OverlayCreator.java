@@ -11,6 +11,7 @@ public class OverlayCreator {
     List<String> nodeList;
 
     private static Logger LOG = Logger.getLogger(OverlayCreator.class.getName());
+    public int totalConnectionsMade;
 
     public OverlayCreator(Set<String> nodes, int connections) {
         this.nodes = nodes;
@@ -18,6 +19,7 @@ public class OverlayCreator {
         this.n = nodes.size();
         overlay = new HashMap<>();
         nodeList = new ArrayList<>(nodes);
+        this.totalConnectionsMade = 0;
     }
 
     public Map<String, List<Tuple>> build() {
@@ -44,7 +46,7 @@ public class OverlayCreator {
     }
 
     // filter method before sending connection requests
-    public static Map<String, List<Tuple>> filter(Map<String, List<Tuple>> overlay) {
+    public Map<String, List<Tuple>> filter(Map<String, List<Tuple>> overlay) {
         LOG.info("Beginning overlay filtering...");
         Map<String, List<Tuple>> connectionMap = new HashMap<>();
         for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()){
@@ -55,6 +57,7 @@ public class OverlayCreator {
                 }
             }
             connectionMap.put(entry.getKey(), filtered);
+            totalConnectionsMade += filtered.size();
         }
         LOG.info("Overlay has been filtered into connectionMap for MessagingNodesList message...");
         return connectionMap;
