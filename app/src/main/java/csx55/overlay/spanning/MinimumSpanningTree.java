@@ -2,34 +2,54 @@ package csx55.overlay.spanning;
 
 import java.util.*;
 
+import csx55.overlay.util.OverlayCreator;
 import csx55.overlay.util.Tuple;
 
 public class MinimumSpanningTree {
 
     Map<String, List<Tuple>> overlay;
-    List<NodeID> nodes;
+    List<Node> nodes;
+    List<Edge> edges;
+    OverlayCreator oc;
 
-    public MinimumSpanningTree(Map<String, List<Tuple>> overlay) {
+    public MinimumSpanningTree(Map<String, List<Tuple>> overlay, OverlayCreator oc) {
         this.overlay = overlay;
         this.nodes = new ArrayList<>();
+        this.edges = new ArrayList<>();
+        this.oc = oc;
 
+        // assign treeNum variable to each node with 0
         for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()){
-            NodeID node = new NodeID(entry.getKey());
+            Node node = new Node(entry.getKey());
             nodes.add(node);
         }
+
+        createEdges();
     }
 
     public void printNodes() {
-        for(NodeID node : nodes) {
+        for(Node node : nodes) {
             System.out.println(node.toString());
         }
     }
     
     // filter(overlay) -> filteredOverlay
         // sort(filtered) by weight
+    Map<String, List<Tuple>> filteredOverlay;
+    private void createEdges() {
+        filteredOverlay = new HashMap<>(oc.filter(overlay));
+        for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()){
+            Edge e = new Edge(entry.getKey(), entry.getValue().get(0).getEndpoint(), entry.getValue().get(1).getWeight());
+            edges.add(e);
+        }
+        Collections.sort(edges, Comparator.comparing(Edge::getWeight));
+    }
 
-    // assign treeNum variable to each edge with null
-
+    public void printEdges() {
+        for(Edge e : edges) {
+            System.out.println(e.toString());
+        }
+    }
     
     // algo
         // treeNum = 1
@@ -46,11 +66,11 @@ public class MinimumSpanningTree {
                 // assign treeNum+1 to nodes
 
 
-    private class NodeID {
+    private class Node {
         String id;
         int treeNum;
 
-        private NodeID(String id) {
+        private Node(String id) {
             this.id = id;
             this.treeNum = 0;
         }
@@ -68,5 +88,26 @@ public class MinimumSpanningTree {
             return getId() + ", " + getTreeNum();
         }
 
+    }
+
+    private class Edge {
+        String nodeA;
+        String nodeB;
+        int weight;
+
+        private Edge(String nodeA, String nodeB, int weight) {
+            this.nodeA = nodeA;
+            this.nodeB = nodeB;
+            this.weight = weight;
+        }
+        
+        private int getWeight(){
+            return weight;
+        }
+
+        @Override
+        public String toString() {
+            return nodeA + ", " + nodeB + ", " + weight;
+        }
     }
 }

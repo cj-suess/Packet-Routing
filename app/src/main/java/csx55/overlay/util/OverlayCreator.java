@@ -13,6 +13,10 @@ public class OverlayCreator {
     private static Logger LOG = Logger.getLogger(OverlayCreator.class.getName());
     public int totalConnectionsMade;
 
+    public OverlayCreator() {
+        
+    }
+
     public OverlayCreator(Set<String> nodes, int connections) {
         this.nodes = nodes;
         this.k = connections;
