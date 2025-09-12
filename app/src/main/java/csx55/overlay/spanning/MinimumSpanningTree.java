@@ -105,7 +105,7 @@ public class MinimumSpanningTree {
 
     public void printMST() { // need to change to BFS format later
         for(Edge e : mst) {
-            LOG.info(e.toString());
+            System.out.println(e);
         }
     }
 
