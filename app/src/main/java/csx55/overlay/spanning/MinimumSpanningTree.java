@@ -27,7 +27,7 @@ public class MinimumSpanningTree {
         }
 
         createEdges();
-        generateMST(edges, mst);
+        //generateMST(edges, mst);
     }
 
     public void printNodes() {
@@ -39,11 +39,20 @@ public class MinimumSpanningTree {
     Map<String, List<Tuple>> filteredOverlay;
     private void createEdges() {
         filteredOverlay = new HashMap<>(oc.filter(overlay));
-        for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()){
-            Edge e = new Edge(entry.getKey(), entry.getValue().get(0).getEndpoint(), entry.getValue().get(1).getWeight());
-            edges.add(e);
+        for(Map.Entry<String, List<Tuple>> entry : filteredOverlay.entrySet()){
+            for(Tuple t : entry.getValue()) {
+                Edge e = new Edge(entry.getKey(), t.getEndpoint(), t.getWeight());
+                edges.add(e);
+            }
+            // Edge e = new Edge(entry.getKey(), entry.getValue().get(0).getEndpoint(), entry.getValue().get(0).getWeight());
+            // edges.add(e);
         }
-        Collections.sort(edges, Comparator.comparing(Edge::getWeight));
+    }
+
+    public void printFilteredOverlay() {
+        for(Map.Entry<String, List<Tuple>> entry : filteredOverlay.entrySet()){
+            LOG.info(entry.toString());
+        }
     }
 
     public void printEdges() {
@@ -53,6 +62,7 @@ public class MinimumSpanningTree {
     }
 
     private void generateMST(List<Edge> edges, List<Edge> mst) {
+        Collections.sort(edges, Comparator.comparing(Edge::getWeight)); // sort edges
         int treeNum = 1;
         for(Edge e : edges) {
             if(mst.size() == nodes.size() - 1) { // stop when every node is in the mst

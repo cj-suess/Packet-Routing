@@ -257,7 +257,7 @@ public class Registry implements Node {
 
     public static void main(String[] args) {
 
-        LogConfig.init(Level.WARNING);
+        LogConfig.init(Level.INFO);
 
         Registry reg = new Registry(Integer.parseInt(args[0]));
         new Thread(reg::startRegistry).start();
