@@ -4,6 +4,7 @@ import csx55.overlay.transport.TCPReceiverThread;
 import csx55.overlay.transport.TCPSender;
 import csx55.overlay.util.LogConfig;
 import csx55.overlay.util.Tuple;
+import csx55.overlay.spanning.MinimumSpanningTree;
 import csx55.overlay.transport.TCPConnection;
 import csx55.overlay.wireformats.*;
 import java.io.*;
@@ -175,6 +176,9 @@ public class MessagingNode implements Node {
                     case "print-overlay":
                         printOverlay();
                         break;
+                    case "test-nodes":
+                        MinimumSpanningTree mst = new MinimumSpanningTree(overlay);
+                        mst.printNodes();
                     default:
                         break;
                 }
