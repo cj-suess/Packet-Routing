@@ -177,10 +177,10 @@ public class MessagingNode implements Node {
                     case "print-overlay":
                         printOverlay();
                         break;
-                    case "test-edges":
+                    case "print-mst":
                         OverlayCreator oc = new OverlayCreator();
                         MinimumSpanningTree mst = new MinimumSpanningTree(overlay, oc);
-                        mst.printEdges();
+                        mst.printMST();
                     default:
                         break;
                 }
@@ -188,10 +188,6 @@ public class MessagingNode implements Node {
         } catch(Exception e) {
             LOG.warning("Exception in terminal reader..." + e.getMessage());
         }
-    }
-
-    public void createMST() {
-
     }
 
     public void register() {

@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import csx55.overlay.node.MessagingNode;
 import csx55.overlay.util.Tuple;
 import java.util.logging.*;
 
