@@ -8,14 +8,16 @@ import csx55.overlay.util.Tuple;
 public class MinimumSpanningTree {
 
     Map<String, List<Tuple>> overlay;
-    List<Node> nodes;
-    List<Edge> edges;
     OverlayCreator oc;
+    Set<Node> nodes; // make a map?
+    List<Edge> edges;
+    List<Edge> mst;
 
     public MinimumSpanningTree(Map<String, List<Tuple>> overlay, OverlayCreator oc) {
         this.overlay = overlay;
-        this.nodes = new ArrayList<>();
+        this.nodes = new HashSet<>();
         this.edges = new ArrayList<>();
+        this.mst = new ArrayList<>();
         this.oc = oc;
 
         // assign treeNum variable to each node with 0
@@ -25,6 +27,7 @@ public class MinimumSpanningTree {
         }
 
         createEdges();
+        generateMST(edges, mst);
     }
 
     public void printNodes() {
@@ -64,6 +67,14 @@ public class MinimumSpanningTree {
             // if(set not empty and (nodeOne is null and nodeTwo is null))
                 // add edge to set
                 // assign treeNum+1 to nodes
+    private void generateMST(List<Edge> edges, List<Edge> mst) {
+        int treeNum = 1;
+        while(mst.size() != nodes.size() - 1) {
+            for(Edge e : edges) {
+                if(!mst.isEmpty() && ())
+            }
+        }
+    }
 
 
     private class Node {
