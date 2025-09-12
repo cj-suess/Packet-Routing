@@ -71,34 +71,30 @@ public class MinimumSpanningTree {
 
     private void generateMST(List<Edge> edges, List<Edge> mst) {
         int treeNum = 1;
-        int lowest = treeNum;
         for(Edge e : edges) {
             if(mst.size() == nodes.size() - 1) { // stop when every node is in the mst
                 break;
             }
-            else if(mst.isEmpty() && (nodes.get(e.nodeA) == 0 && nodes.get(e.nodeB) == 0)) {
+            else if(nodes.get(e.nodeA) == 0 && nodes.get(e.nodeB) == 0) { // if both not in a tree add to same treeNum
                 mst.add(e);
                 nodes.replace(e.nodeA, treeNum);
                 nodes.replace(e.nodeB, treeNum);
+                treeNum++;
             }
-            else if(nodes.get(e.nodeA) == 0 || nodes.get(e.nodeB) == 0) {
+            else if(nodes.get(e.nodeA) == 0 && nodes.get(e.nodeB) != 0) { // if A not in tree add to Bs tree
                 mst.add(e);
-                for(Map.Entry<String, Integer> entry : nodes.entrySet()){
-                    if(entry.getValue() > lowest) {
-                        entry.setValue(lowest);
+                nodes.replace(e.nodeB, nodes.get(e.nodeA));
+            }
+            else if(nodes.get(e.nodeA) != 0 && nodes.get(e.nodeB) == 0) {// if B not in tree add to As tree
+                mst.add(e);
+                nodes.replace(e.nodeA, nodes.get(e.nodeB));
+            }
+            else if(nodes.get(e.nodeA) != nodes.get(e.nodeB)) { // if both in trees convert one of them to the other tree?
+                for(String node : nodes.keySet()){
+                    if(nodes.get(node) == nodes.get(e.nodeA)) {
+                        nodes.replace(node, nodes.get(e.nodeB));
                     }
                 }
-                treeNum -= 1;
-            }
-            else if(!mst.isEmpty() && (nodes.get(e.nodeA) == 0 && nodes.get(e.nodeB) == 0)) {
-                mst.add(e);
-                treeNum += 1;
-                nodes.replace(e.nodeA, treeNum);
-                nodes.replace(e.nodeA, treeNum);
-            }
-            else {
-                LOG.warning("No conditions met for building MST...");
-                break;
             }
         }
     }

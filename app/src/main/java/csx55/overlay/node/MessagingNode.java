@@ -180,7 +180,12 @@ public class MessagingNode implements Node {
                     case "print-mst":
                         OverlayCreator oc = new OverlayCreator();
                         MinimumSpanningTree mst = new MinimumSpanningTree(overlay, oc);
+                        // LOG.info("MST: ");
                         mst.printMST();
+                        // LOG.info("Nodes: ");
+                        // mst.printNodes();
+                        // LOG.info("Edges: ");
+                        // mst.printEdges();
                     default:
                         break;
                 }
