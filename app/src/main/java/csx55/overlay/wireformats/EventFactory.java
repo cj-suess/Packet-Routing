@@ -15,7 +15,7 @@ public class EventFactory {
     byte[] data;
     int messageType;
 
-    private Logger LOG = Logger.getLogger(EventFactory.class.getName());
+    private Logger log = Logger.getLogger(EventFactory.class.getName());
 
     public EventFactory(byte[] data) {
         this.data = data;
@@ -43,12 +43,12 @@ public class EventFactory {
             List<Tuple> peers = new ArrayList<>();
             int weight = 0;
 
-            LOG.info("New event being created...");
+            log.info("New event being created...");
 
             switch (messageType) {
                 case Protocol.REGISTER_REQUEST:
                     // decode data into Register event
-                    LOG.info("\tDecoding data into a Register object...");
+                    log.info("\tDecoding data into a Register object...");
                     ipLength = dis.readInt();
                     ipBytes = new byte[ipLength];
                     dis.readFully(ipBytes);
@@ -60,7 +60,7 @@ public class EventFactory {
                     return register_request;
                 case Protocol.DEREGISTER_REQUEST:
                     // decode into Deregister event
-                    LOG.info("\tDecoding data into a Deregister object...");
+                    log.info("\tDecoding data into a Deregister object...");
                     ipLength = dis.readInt();
                     ipBytes = new byte[ipLength];
                     dis.readFully(ipBytes);
@@ -72,7 +72,7 @@ public class EventFactory {
                     return deregister_request;
                 case Protocol.REGISTER_RESPONSE:
                     // decode data into Message event
-                    LOG.info("\tDecoding data into a Message object...");
+                    log.info("\tDecoding data into a Message object...");
                     statusCode = dis.readByte();
                     infoLength = dis.readInt();
                     infoBytes = new byte[infoLength];
@@ -84,7 +84,7 @@ public class EventFactory {
                     return register_response;
                 case Protocol.DEREGISTER_RESPONSE:
                     // decode data into Message event
-                    LOG.info("\tDecoding data into a Message object...");
+                    log.info("\tDecoding data into a Message object...");
                     statusCode = dis.readByte();
                     infoLength = dis.readInt();
                     infoBytes = new byte[infoLength];
@@ -96,7 +96,7 @@ public class EventFactory {
                     return deregister_response;
                 case Protocol.MESSAGING_NODES_LIST:
                     // decode data into MessagingNodesList event
-                    LOG.info("\tDecoding data into a MessagingNodesList object...");
+                    log.info("\tDecoding data into a MessagingNodesList object...");
                     numConnections = dis.readInt();
                     for(int i = 0; i < numConnections; i++) {
                         Tuple t = createPeer(dis, info, infoLength, infoBytes, weight);
@@ -108,7 +108,7 @@ public class EventFactory {
                     return node_list;
                 case Protocol.NODE_ID:
                     // decode data into Message event
-                    LOG.info("\tDecoding data into a Message object...");
+                    log.info("\tDecoding data into a Message object...");
                     statusCode = dis.readByte();
                     infoLength = dis.readInt();
                     infoBytes = new byte[infoLength];
@@ -120,7 +120,7 @@ public class EventFactory {
                     return idMessage;
                 case Protocol.OVERLAY:
                     // decode data into Overlay event
-                    LOG.info("\tDecoding data into a Overlay object...");
+                    log.info("\tDecoding data into a Overlay object...");
                     Map<String, List<Tuple>> overlay = new HashMap<>();
                     int numNodes = dis.readInt();
                     numConnections = dis.readInt();
@@ -138,7 +138,7 @@ public class EventFactory {
                     }
                     bais.close();
                     dis.close();
-                    Overlay overlayMessage = new Overlay(Protocol.OVERLAY, numNodes, numConnections, overlay);
+                    Overlay overlayMessage = new Overlay(messageType, numNodes, numConnections, overlay);
                     return overlayMessage;
                 case Protocol.LINK_WEIGHTS:
                     int dummyData = dis.readInt();
@@ -146,9 +146,17 @@ public class EventFactory {
                     dis.close();
                     LinkWeights lw = new LinkWeights(messageType, dummyData);
                     return lw;
+                case Protocol.TASK_INITIATE:
+                    // decode data into TaskInitiate event
+                    log.info("\tDecoding data inot a TaskInitiate object....");
+                    int numRounds = dis.readInt();
+                    bais.close();
+                    dis.close();
+                    TaskInitiate ti = new TaskInitiate(messageType, numRounds);
+                    return ti;
                 case Protocol.TASK_COMPLETE:
                     // decode data into TaskComplete event
-                    LOG.info("\tDecoding data into a TaskComplete object...");
+                    log.info("\tDecoding data into a TaskComplete object...");
                     ipLength = dis.readInt();
                     ipBytes = new byte[ipLength];
                     dis.readFully(ipBytes);
@@ -159,10 +167,10 @@ public class EventFactory {
                     TaskComplete taskComplete = new TaskComplete(messageType, ip, port);
                     return taskComplete;
                 default:
-                    LOG.warning("Unknown protocol passed to EventFactory...");
+                    log.warning("Unknown protocol passed to EventFactory...");
             }
         } catch(IOException e) {
-            LOG.info("Exception while decoding data...");
+            log.info("Exception while decoding data...");
         }
         return null;
     }
