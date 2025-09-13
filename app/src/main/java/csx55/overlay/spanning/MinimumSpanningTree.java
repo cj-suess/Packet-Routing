@@ -44,8 +44,6 @@ public class MinimumSpanningTree {
                 Edge e = new Edge(entry.getKey(), t.getEndpoint(), t.getWeight());
                 edges.add(e);
             }
-            // Edge e = new Edge(entry.getKey(), entry.getValue().get(0).getEndpoint(), entry.getValue().get(0).getWeight());
-            // edges.add(e);
         }
     }
 

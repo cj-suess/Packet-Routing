@@ -26,7 +26,7 @@ public class Registry implements Node {
     Map<String, List<Tuple>> connectionMap; // use for relaying who connects to who to avoid duplicate connections
 
     //Logging
-    private Logger LOG = Logger.getLogger(Registry.class.getName());
+    private Logger log = Logger.getLogger(Registry.class.getName());
 
     public Registry(int port) {
         this.port = port;
@@ -38,31 +38,30 @@ public class Registry implements Node {
 
         TCPSender sender = getSender(openConnections, socket);
         String socketAddress = socket.getInetAddress().getHostAddress(); // messaging nodes IP address
-        int socketPort = socket.getPort(); // messaging nodes port
 
         try {
             if(event.getType() == Protocol.REGISTER_REQUEST) {
-                LOG.info("Register request detected. Checking status...");
+                log.info("Register request detected. Checking status...");
                 Register node = (Register) event; // downcast back to Register
                 String nodeEntry = node.ip + ":" + node.port;
                 if(node.ip.equals(socketAddress) && registeredNodes.add(nodeEntry)) {
-                    LOG.info(() -> "New node was added to the registry successfully!\n" + "\tCurrent number of nodes in registry: " + registeredNodes.size());
+                    log.info(() -> "New node was added to the registry successfully!\n" + "\tCurrent number of nodes in registry: " + registeredNodes.size());
                     String info = "Registration request successful. The number of messaging nodes currently constituting the overlay is (" + registeredNodes.size() + ")";
                     Message successMessage = new Message(Protocol.REGISTER_RESPONSE, (byte)0, info);
-                    LOG.info(() -> "Sending success response to messaging node at %s" + nodeEntry);
+                    log.info(() -> "Sending success response to messaging node at %s" + nodeEntry);
                     sender.sendData(successMessage.getBytes());
                 } else {
                     // add failure cases
-                    LOG.info(() -> "Failure ocurred while registering node...\n\tChecking for mismatching IPs...\n\tIP in message: " + node.ip + " Socket IP: " + socketAddress);
+                    log.info(() -> "Failure ocurred while registering node...\n\tChecking for mismatching IPs...\n\tIP in message: " + node.ip + " Socket IP: " + socketAddress);
                     if(!node.ip.equals(socketAddress)) {
                         // send failure for mismatch
-                        LOG.info("Sending failure message for mismatching IPs...");
+                        log.info("Sending failure message for mismatching IPs...");
                         String info = "Registration request failed. The IP address in the registration request did not match the IP address of the socket.";
                         Message failureMessage = new Message(Protocol.REGISTER_RESPONSE, (byte)1, info);
                         sender.sendData(failureMessage.getBytes());
                     } else {
                         // send failure for duplicate
-                        LOG.info("Sending failure message for duplicate IPs...");
+                        log.info("Sending failure message for duplicate IPs...");
                         String info = "Registration request failed. The node entry already exists in the registry.";
                         Message failureMessage = new Message(Protocol.REGISTER_RESPONSE, (byte)1, info);
                         sender.sendData(failureMessage.getBytes());
@@ -71,35 +70,42 @@ public class Registry implements Node {
                 }
             }
             else if(event.getType() == Protocol.DEREGISTER_REQUEST) {
-                LOG.info("Deregister request detected. Checking status...");
+                log.info("Deregister request detected. Checking status...");
                 Deregister node = (Deregister) event; // downcast back to Deregister
                 String nodeEntry = node.ip + ":" + node.port;
                 if(registeredNodes.remove(nodeEntry) && node.ip.equals(socketAddress)) {
-                    LOG.info(() -> "The node at " + nodeEntry + " has been removed from the registry...");
+                    log.info(() -> "The node at " + nodeEntry + " has been removed from the registry...");
                     String info = "The node has been successfully removed from the registry...";
                     Message successMessage = new Message(Protocol.DEREGISTER_RESPONSE, (byte)0, info);
-                    LOG.info(() -> "Sending deregistration success response to messaging node at " + nodeEntry);
+                    log.info(() -> "Sending deregistration success response to messaging node at " + nodeEntry);
                     sender.sendData(successMessage.getBytes());
                 } else {
                     if(!node.ip.equals(socketAddress)){
                         // mismatch
-                        LOG.info("Sending failure message for mismatching IPs...");
+                        log.info("Sending failure message for mismatching IPs...");
                         String info = "Deregistration request failed. The IP address in the deregistration request did not match the IP address of the socket.";
                         Message failureMessage = new Message(Protocol.DEREGISTER_RESPONSE, (byte)1, info);
-                        LOG.info(() -> "Sending deregistration failure response to messaging node at " + nodeEntry);
+                        log.info(() -> "Sending deregistration failure response to messaging node at " + nodeEntry);
                         sender.sendData(failureMessage.getBytes());
                     } else {
                         // node entry does not exist
-                        LOG.info("The node " + nodeEntry + " does not exist in the registry...");
+                        log.info("The node " + nodeEntry + " does not exist in the registry...");
                         String info = "The node could not be removed from the registry since it was not registered...";
                         Message failureMessage = new Message(Protocol.DEREGISTER_RESPONSE, (byte)1, info);
-                        LOG.info(() -> "Sending deregistration failure response to messaging node at " + nodeEntry);
+                        log.info(() -> "Sending deregistration failure response to messaging node at " + nodeEntry);
                         sender.sendData(failureMessage.getBytes());
                     }
                 }
             }
+            else if(event.getType() == Protocol.TASK_COMPLETE) {
+                TaskComplete taskComplete = (TaskComplete) event;
+                String nodeID = taskComplete.ip + ":" + taskComplete.port;
+                // mark node as complete
+                log.info("Received task complete message from " + nodeID);
+                log.info("Need to implement marking node as complete still...");
+            }
         } catch(IOException e) {
-            LOG.warning("Exception in registery while handling an event...");
+            log.warning("Exception in registery while handling an event...");
         }
     }
 
@@ -116,26 +122,26 @@ public class Registry implements Node {
     public void startRegistry() {
         try {
             serverSocket = new ServerSocket(port);
-            LOG.info("Registry is up and running. Listening on port: " + port);
+            log.info("Registry is up and running. Listening on port: " + port);
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> { // needed if the terminal crashes so the node deregisters. not sure if I can catch it elsewhere
                 try {
                     serverSocket.close();
                 } catch(IOException e) {
-                    LOG.warning("Exception while trying to clean up after sudden termination...");
+                    log.warning("Exception while trying to clean up after sudden termination...");
                 }
             }));
 
             while(true) {
                 Socket socket = serverSocket.accept();
-                LOG.info(() -> "New connection from: " + socket.getInetAddress().getHostAddress());
+                log.info(() -> "New connection from: " + socket.getInetAddress().getHostAddress());
                 TCPConnection conn = new TCPConnection(socket, this);
                 new Thread(conn).start();
                 openConnections.add(conn);
             }
 
         } catch(IOException e) {
-            LOG.warning(() -> "Exception in registry node loop..." + e.getMessage());
+            log.warning(() -> "Exception in registry node loop..." + e.getMessage());
         }
     }
 
@@ -147,7 +153,7 @@ public class Registry implements Node {
                 String[] splitCommand = command.split("\\s+");
                 switch (splitCommand[0]) {
                     case "exit":
-                        LOG.info("[Registry] Closing registry node...");
+                        log.info("[Registry] Closing registry node...");
                         scanner.close();
                         System.exit(0);
                         break;
@@ -200,8 +206,8 @@ public class Registry implements Node {
     }
 
     public void sendOverlay() throws IOException {
-        LOG.info("Sending overlay to messaging nodes...");
-        LOG.info("\tNum connections: " + overlay.values().size());
+        log.info("Sending overlay to messaging nodes...");
+        log.info("\tNum connections: " + overlay.values().size());
         Overlay overlayMessage = new Overlay(Protocol.OVERLAY, registeredNodes.size(), connections, overlay);
         for(TCPConnection conn : openConnections) {
             conn.sender.sendData(overlayMessage.getBytes());
@@ -210,7 +216,7 @@ public class Registry implements Node {
     }
 
     public void sendConnections() throws IOException {
-        LOG.info("Sending connections to the messaging nodes...");
+        log.info("Sending connections to the messaging nodes...");
         for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()) {
             String nodeIP = entry.getKey().substring(0, entry.getKey().indexOf(":"));
             int numConnections = entry.getValue().size();
@@ -231,19 +237,19 @@ public class Registry implements Node {
 
     public void printConnections() {
         for(TCPConnection conn : openConnections) {
-            LOG.warning(conn.socket.getInetAddress().getHostAddress());
+            log.warning(conn.socket.getInetAddress().getHostAddress());
         }
     }
 
     public void printOverlay() {
         for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()) {
-            LOG.warning(entry.toString());
+            log.warning(entry.toString());
         }
     }
 
     public void printConnectionMap() {
         for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()){
-            LOG.warning(entry.toString());
+            log.warning(entry.toString());
         }
     }
 
@@ -257,7 +263,7 @@ public class Registry implements Node {
 
     public static void main(String[] args) {
 
-        LogConfig.init(Level.WARNING);
+        LogConfig.init(Level.INFO);
 
         Registry reg = new Registry(Integer.parseInt(args[0]));
         new Thread(reg::startRegistry).start();

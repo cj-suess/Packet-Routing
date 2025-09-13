@@ -13,6 +13,9 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
+
+import javax.imageio.IIOException;
+
 import java.util.logging.Level;
 
 public class MessagingNode implements Node {
@@ -42,7 +45,7 @@ public class MessagingNode implements Node {
 
     //Logging
     private volatile String nodeID = "NO ID";
-    private Logger LOG = Logger.getLogger(MessagingNode.class.getName());
+    private Logger log = Logger.getLogger(MessagingNode.class.getName());
 
 
     public MessagingNode(String registryIP, int registryPort) {
@@ -87,7 +90,7 @@ public class MessagingNode implements Node {
     }
 
     public void connect(int numConnections) {
-        LOG.info(() -> "Received " + numConnections + " conenctions from registry.");
+        log.info(() -> "Received " + numConnections + " conenctions from registry.");
         for(Tuple t : connectionList) {
             try {
                 String remoteNodeID = t.getEndpoint();
@@ -101,22 +104,22 @@ public class MessagingNode implements Node {
                 Message idMessage = new Message(Protocol.NODE_ID, (byte)0, localNodeID);
                 conn.sender.sendData(idMessage.getBytes());
             } catch(IOException e) {
-                LOG.warning("Failed to connect to " + t.getEndpoint() + ": " + e.getLocalizedMessage());
+                log.warning("Failed to connect to " + t.getEndpoint() + ": " + e.getLocalizedMessage());
             }
         }
         System.out.println("All connections are established. Number of connections: " + numConnections);
     }
 
     public void printConnectionList() {
-        LOG.info("Printing My Connections: ");
+        log.info("Printing My Connections: ");
         for(Map.Entry<String, TCPConnection> entry : openConnections.entrySet()) {
-            LOG.info("Connected NodeID: " + entry.getKey());
+            log.info("Connected NodeID: " + entry.getKey());
         }
     }
 
     public void printOverlay() {
         for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()) {
-            LOG.info(entry.toString());
+            log.info(entry.toString());
         }
     }
 
@@ -126,8 +129,8 @@ public class MessagingNode implements Node {
             serverPort = serverSocket.getLocalPort();
             serverSocket.getInetAddress();
             nodeID = InetAddress.getLocalHost().getHostAddress() + ":" + serverPort;
-            LOG = Logger.getLogger(MessagingNode.class.getName() + "[" + nodeID + "]");
-            LOG.info("Messaging node is up and running.\n \tListening on port: " + serverPort + "\n" + "\tIP Address: " + InetAddress.getLocalHost().getHostAddress());
+            log = Logger.getLogger(MessagingNode.class.getName() + "[" + nodeID + "]");
+            log.info("Messaging node is up and running.\n \tListening on port: " + serverPort + "\n" + "\tIP Address: " + InetAddress.getLocalHost().getHostAddress());
             register();
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> { // needed if the terminal crashes so the node deregisters. not sure if I can catch it elsewhere
@@ -141,14 +144,14 @@ public class MessagingNode implements Node {
 
             while(true) {
                 Socket socket = serverSocket.accept();
-                LOG.info("New connection on messaging node from: " + socket.getInetAddress());
+                log.info("New connection on messaging node from: " + socket.getInetAddress());
                 TCPConnection conn = new TCPConnection(socket, this); 
                 socketToConn.put(socket, conn);
                 new Thread(conn, nodeID).start();
             }
 
         } catch(IOException e) {
-            LOG.warning("Exception while starting messaging node..." + e.getMessage());
+            log.warning("Exception while starting messaging node..." + e.getMessage());
         }
     }
 
@@ -168,9 +171,6 @@ public class MessagingNode implements Node {
                     case "deregister":
                         deregister();
                         break;
-                    case "node-status":
-                        nodeStatus();
-                        break;
                     case "print-connections":
                         printConnectionList();
                         break;
@@ -181,12 +181,13 @@ public class MessagingNode implements Node {
                         OverlayCreator oc = new OverlayCreator();
                         mst = new MinimumSpanningTree(overlay, oc);
                         mst.printMST();
+                        break;
                     default:
                         break;
                 }
             }
         } catch(Exception e) {
-            LOG.warning("Exception in terminal reader..." + e.getMessage());
+            log.warning("Exception in terminal reader..." + e.getMessage());
         }
     }
 
@@ -194,7 +195,7 @@ public class MessagingNode implements Node {
         try {
             if(registrySender == null) {
                 registrySocket = new Socket(registryIP, registryPort);
-                LOG.info("Connecting to registry...");
+                log.info("Connecting to registry...");
                 Register registerRequest = new Register(Protocol.REGISTER_REQUEST, registrySocket.getLocalAddress().getHostAddress(), serverPort);
                 registrySender = new TCPSender(registrySocket);
                 registryReceiver = new TCPReceiverThread(registrySocket, this);
@@ -206,27 +207,32 @@ public class MessagingNode implements Node {
             }
             
         } catch (Exception e) {
-            LOG.warning("Exception while registering node with registry...");
+            log.warning("Exception while registering node with registry...");
         }
     }
 
     public void deregister() {
-        LOG.info("Deregistering node...");
+        log.info("Deregistering node...");
             Deregister deregisterRequest = new Deregister(Protocol.DEREGISTER_REQUEST, registrySocket.getLocalAddress().getHostAddress(), serverPort);
             try {
                 registrySender.sendData(deregisterRequest.getBytes());
             } catch (IOException e) {
-                LOG.warning("Exception while deregitering node..." + e.getMessage());
+                log.warning("Exception while deregitering node..." + e.getMessage());
             }
     }
 
-    public void nodeStatus() {
-        LOG.info("Current node status: " + this.registered);
-    }
+   public void sendTaskComplete() {
+        try {
+            TaskComplete tc = new TaskComplete(Protocol.TASK_COMPLETE, InetAddress.getLocalHost().getHostAddress(), serverPort);
+            registrySender.sendData(tc.getBytes());
+        } catch(IOException e) {
+            log.warning(e.getLocalizedMessage());
+        }
+   }
 
     public static void main(String[] args) {
 
-        LogConfig.init(Level.WARNING);
+        LogConfig.init(Level.INFO);
 
         MessagingNode node = new MessagingNode(args[0], Integer.parseInt(args[1]));
         new Thread(node::startNode, "Node-" + node.nodeID + "-Server").start();
