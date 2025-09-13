@@ -1,6 +1,7 @@
 package csx55.overlay.util;
 
 import java.util.*;
+import java.util.logging.*;
 
 public class OverlayCreator {
 
@@ -9,12 +10,20 @@ public class OverlayCreator {
     Map<String, List<Tuple>> overlay;
     List<String> nodeList;
 
+    private static Logger LOG = Logger.getLogger(OverlayCreator.class.getName());
+    public int totalConnectionsMade;
+
+    public OverlayCreator() {
+        
+    }
+
     public OverlayCreator(Set<String> nodes, int connections) {
         this.nodes = nodes;
         this.k = connections;
         this.n = nodes.size();
         overlay = new HashMap<>();
         nodeList = new ArrayList<>(nodes);
+        this.totalConnectionsMade = 0;
     }
 
     public Map<String, List<Tuple>> build() {
@@ -32,17 +41,17 @@ public class OverlayCreator {
                     overlay.get(nodeList.get(i)).add(new Tuple(nodeList.get(j), (new Random().nextInt(9)) + 1));
                 }
             }
-            System.out.println("Overlay build complete...");
+            LOG.info("Overlay build complete...");
             return overlay;
         } else {
-            System.err.println("[Registry] Error. Cannot create overlay with current state.");
+            LOG.warning("Error. Cannot create overlay with current state.");
         }
         return null;
     }
 
     // filter method before sending connection requests
-    public Map<String, List<Tuple>> filter() {
-        System.out.println("Beginning overlay filtering...");
+    public Map<String, List<Tuple>> filter(Map<String, List<Tuple>> overlay) {
+        LOG.info("Beginning overlay filtering...");
         Map<String, List<Tuple>> connectionMap = new HashMap<>();
         for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()){
             List<Tuple> filtered = new ArrayList<>();
@@ -52,8 +61,9 @@ public class OverlayCreator {
                 }
             }
             connectionMap.put(entry.getKey(), filtered);
+            totalConnectionsMade += filtered.size();
         }
-        System.out.println("Overlay has been filtered into connectionMap for MessagingNodesList message...");
+        LOG.info("Overlay has been filtered into connectionMap for MessagingNodesList message...");
         return connectionMap;
     }
     

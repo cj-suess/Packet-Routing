@@ -6,9 +6,12 @@ import java.util.concurrent.*;
 import java.io.*;
 
 import csx55.overlay.transport.*;
+import csx55.overlay.util.LogConfig;
 import csx55.overlay.util.OverlayCreator;
 import csx55.overlay.util.Tuple;
 import csx55.overlay.wireformats.*;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 public class Registry implements Node {
 
@@ -21,6 +24,9 @@ public class Registry implements Node {
     Set<String> registeredNodes;
     Map<String, List<Tuple>> overlay; // grab messaging node ip and match with correct socket in openConnections
     Map<String, List<Tuple>> connectionMap; // use for relaying who connects to who to avoid duplicate connections
+
+    //Logging
+    private Logger LOG = Logger.getLogger(Registry.class.getName());
 
     public Registry(int port) {
         this.port = port;
@@ -36,27 +42,27 @@ public class Registry implements Node {
 
         try {
             if(event.getType() == Protocol.REGISTER_REQUEST) {
-                System.out.println("[Registry] Register request detected. Checking status...");
+                LOG.info("Register request detected. Checking status...");
                 Register node = (Register) event; // downcast back to Register
                 String nodeEntry = node.ip + ":" + node.port;
                 if(node.ip.equals(socketAddress) && registeredNodes.add(nodeEntry)) {
-                    System.out.printf("[Registry] New node was added to the registry successfully!\n" + "[Registry] Current number of nodes in registry %d\n", registeredNodes.size());
+                    LOG.info(() -> "New node was added to the registry successfully!\n" + "\tCurrent number of nodes in registry: " + registeredNodes.size());
                     String info = "Registration request successful. The number of messaging nodes currently constituting the overlay is (" + registeredNodes.size() + ")";
                     Message successMessage = new Message(Protocol.REGISTER_RESPONSE, (byte)0, info);
-                    System.out.printf("[Registry] Sending success response to messaging node at %s\n", nodeEntry);
+                    LOG.info(() -> "Sending success response to messaging node at %s" + nodeEntry);
                     sender.sendData(successMessage.getBytes());
                 } else {
                     // add failure cases
-                    System.out.printf("[Registry] Failure ocurred while registering node...\n\tChecking for mismatching IPs...\n\tIP in message: %s Socket IP: %s\n", node.ip, socketAddress);
+                    LOG.info(() -> "Failure ocurred while registering node...\n\tChecking for mismatching IPs...\n\tIP in message: " + node.ip + " Socket IP: " + socketAddress);
                     if(!node.ip.equals(socketAddress)) {
                         // send failure for mismatch
-                        System.out.println("[Registry] Sending failure message for mismatching IPs...");
+                        LOG.info("Sending failure message for mismatching IPs...");
                         String info = "Registration request failed. The IP address in the registration request did not match the IP address of the socket.";
                         Message failureMessage = new Message(Protocol.REGISTER_RESPONSE, (byte)1, info);
                         sender.sendData(failureMessage.getBytes());
                     } else {
                         // send failure for duplicate
-                        System.out.println("[Registry] Sending failure message for duplicate IPs...");
+                        LOG.info("Sending failure message for duplicate IPs...");
                         String info = "Registration request failed. The node entry already exists in the registry.";
                         Message failureMessage = new Message(Protocol.REGISTER_RESPONSE, (byte)1, info);
                         sender.sendData(failureMessage.getBytes());
@@ -65,35 +71,35 @@ public class Registry implements Node {
                 }
             }
             else if(event.getType() == Protocol.DEREGISTER_REQUEST) {
-                System.out.println("[Registry] Deregister request detected. Checking status...");
+                LOG.info("Deregister request detected. Checking status...");
                 Deregister node = (Deregister) event; // downcast back to Deregister
                 String nodeEntry = node.ip + ":" + node.port;
                 if(registeredNodes.remove(nodeEntry) && node.ip.equals(socketAddress)) {
-                    System.out.printf("[Registry] The node at %s has been removed from the registry...\n", nodeEntry);
+                    LOG.info(() -> "The node at " + nodeEntry + " has been removed from the registry...");
                     String info = "The node has been successfully removed from the registry...";
                     Message successMessage = new Message(Protocol.DEREGISTER_RESPONSE, (byte)0, info);
-                    System.out.printf("[Registry] Sending deregistration success response to messaging node at %s\n", nodeEntry);
+                    LOG.info(() -> "Sending deregistration success response to messaging node at " + nodeEntry);
                     sender.sendData(successMessage.getBytes());
                 } else {
                     if(!node.ip.equals(socketAddress)){
                         // mismatch
-                        System.out.println("[Registry] Sending failure message for mismatching IPs...");
+                        LOG.info("Sending failure message for mismatching IPs...");
                         String info = "Deregistration request failed. The IP address in the deregistration request did not match the IP address of the socket.";
                         Message failureMessage = new Message(Protocol.DEREGISTER_RESPONSE, (byte)1, info);
-                        System.out.printf("[Registry] Sending deregistration failure response to messaging node at %s\n", nodeEntry);
+                        LOG.info(() -> "Sending deregistration failure response to messaging node at " + nodeEntry);
                         sender.sendData(failureMessage.getBytes());
                     } else {
                         // node entry does not exist
-                        System.out.printf("[Registry] The node %s does not exist in the registry...\n", nodeEntry);
+                        LOG.info("The node " + nodeEntry + " does not exist in the registry...");
                         String info = "The node could not be removed from the registry since it was not registered...";
                         Message failureMessage = new Message(Protocol.DEREGISTER_RESPONSE, (byte)1, info);
-                        System.out.printf("[Registry] Sending deregistration failure response to messaging node at %s\n", nodeEntry);
+                        LOG.info(() -> "Sending deregistration failure response to messaging node at " + nodeEntry);
                         sender.sendData(failureMessage.getBytes());
                     }
                 }
             }
         } catch(IOException e) {
-            System.err.println("[Registry] Exception in registery while handling an event...");
+            LOG.warning("Exception in registery while handling an event...");
         }
     }
 
@@ -110,26 +116,26 @@ public class Registry implements Node {
     public void startRegistry() {
         try {
             serverSocket = new ServerSocket(port);
-            System.out.println("[Registry] Registry is up and running. Listening on port: " + port + "\n");
+            LOG.info("Registry is up and running. Listening on port: " + port);
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> { // needed if the terminal crashes so the node deregisters. not sure if I can catch it elsewhere
                 try {
                     serverSocket.close();
                 } catch(IOException e) {
-                    System.err.println("Exception while trying to clean up after sudden termination...");
+                    LOG.warning("Exception while trying to clean up after sudden termination...");
                 }
             }));
 
             while(true) {
                 Socket socket = serverSocket.accept();
-                System.out.println("\n[Registry] New connection from: " + socket.getInetAddress().getHostAddress());
+                LOG.info(() -> "New connection from: " + socket.getInetAddress().getHostAddress());
                 TCPConnection conn = new TCPConnection(socket, this);
                 new Thread(conn).start();
                 openConnections.add(conn);
             }
 
         } catch(IOException e) {
-            System.out.println("[Registry] Exception in registry node loop..." + e.getMessage());
+            LOG.warning(() -> "Exception in registry node loop..." + e.getMessage());
         }
     }
 
@@ -141,7 +147,7 @@ public class Registry implements Node {
                 String[] splitCommand = command.split("\\s+");
                 switch (splitCommand[0]) {
                     case "exit":
-                        System.out.println("[Registry] Closing registry node...");
+                        LOG.info("[Registry] Closing registry node...");
                         scanner.close();
                         System.exit(0);
                         break;
@@ -155,15 +161,17 @@ public class Registry implements Node {
                         OverlayCreator oc = new OverlayCreator(registeredNodes, connections);
                         overlay = oc.build();
                         if(overlay != null) {
-                            connectionMap = oc.filter();
+                            connectionMap = oc.filter(overlay);
                             sendOverlay();
                             sendConnections();
+                            System.out.println("setup completed with " + oc.totalConnectionsMade + " connections");
                         }
                         break;
                     case "list-weights":
                         listWeights();
                         break;
                     case "send-overlay-link-weights":
+                        sendLinkWeights();
                         System.out.println("link weights assigned");
                         break;
                     case "print-connections":
@@ -183,10 +191,17 @@ public class Registry implements Node {
             System.err.println("[Registry] Exception in terminal reader...");
         }
     }
+    
+    public void sendLinkWeights() throws IOException {
+        LinkWeights lw = new LinkWeights(Protocol.LINK_WEIGHTS, 0);
+        for(TCPConnection conn : openConnections) {
+            conn.sender.sendData(lw.getBytes());
+        }
+    }
 
     public void sendOverlay() throws IOException {
-        System.out.println("[Registry] Sending overlay to messaging nodes...");
-        System.out.println("Num connections: " + overlay.values().size());
+        LOG.info("Sending overlay to messaging nodes...");
+        LOG.info("\tNum connections: " + overlay.values().size());
         Overlay overlayMessage = new Overlay(Protocol.OVERLAY, registeredNodes.size(), connections, overlay);
         for(TCPConnection conn : openConnections) {
             conn.sender.sendData(overlayMessage.getBytes());
@@ -195,7 +210,7 @@ public class Registry implements Node {
     }
 
     public void sendConnections() throws IOException {
-        System.out.println("[Registry] Sending connections to the messaging nodes...");
+        LOG.info("Sending connections to the messaging nodes...");
         for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()) {
             String nodeIP = entry.getKey().substring(0, entry.getKey().indexOf(":"));
             int numConnections = entry.getValue().size();
@@ -216,19 +231,19 @@ public class Registry implements Node {
 
     public void printConnections() {
         for(TCPConnection conn : openConnections) {
-            System.out.println(conn.socket.getInetAddress().getHostAddress());
+            LOG.warning(conn.socket.getInetAddress().getHostAddress());
         }
     }
 
     public void printOverlay() {
         for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()) {
-            System.out.println(entry);
+            LOG.warning(entry.toString());
         }
     }
 
     public void printConnectionMap() {
         for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()){
-            System.out.println(entry);
+            LOG.warning(entry.toString());
         }
     }
 
@@ -241,6 +256,9 @@ public class Registry implements Node {
     }
 
     public static void main(String[] args) {
+
+        LogConfig.init(Level.WARNING);
+
         Registry reg = new Registry(Integer.parseInt(args[0]));
         new Thread(reg::startRegistry).start();
         new Thread(reg::readTerminal).start();
