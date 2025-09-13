@@ -38,7 +38,7 @@ public class MessagingNode implements Node {
     Map<String, List<Tuple>> overlay;
 
     // MST
-    
+    MinimumSpanningTree mst;
 
     //Logging
     private volatile String nodeID = "NO ID";
@@ -179,11 +179,8 @@ public class MessagingNode implements Node {
                         break;
                     case "print-mst":
                         OverlayCreator oc = new OverlayCreator();
-                        MinimumSpanningTree mst = new MinimumSpanningTree(overlay, oc);
-                        // LOG.info("MST: ");
+                        mst = new MinimumSpanningTree(overlay, oc);
                         mst.printMST();
-                        // LOG.info("EDGES: ");
-                        // mst.printEdges();
                     default:
                         break;
                 }
@@ -229,7 +226,7 @@ public class MessagingNode implements Node {
 
     public static void main(String[] args) {
 
-        LogConfig.init(Level.INFO);
+        LogConfig.init(Level.WARNING);
 
         MessagingNode node = new MessagingNode(args[0], Integer.parseInt(args[1]));
         new Thread(node::startNode, "Node-" + node.nodeID + "-Server").start();

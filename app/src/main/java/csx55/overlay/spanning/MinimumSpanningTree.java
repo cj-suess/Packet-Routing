@@ -27,7 +27,7 @@ public class MinimumSpanningTree {
         }
 
         createEdges();
-        //generateMST(edges, mst);
+        generateMST(edges, mst);
     }
 
     public void printNodes() {

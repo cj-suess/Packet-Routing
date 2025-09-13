@@ -231,19 +231,19 @@ public class Registry implements Node {
 
     public void printConnections() {
         for(TCPConnection conn : openConnections) {
-            LOG.info(conn.socket.getInetAddress().getHostAddress());
+            LOG.warning(conn.socket.getInetAddress().getHostAddress());
         }
     }
 
     public void printOverlay() {
         for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()) {
-            LOG.info(entry.toString());
+            LOG.warning(entry.toString());
         }
     }
 
     public void printConnectionMap() {
         for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()){
-            LOG.info(entry.toString());
+            LOG.warning(entry.toString());
         }
     }
 
@@ -257,7 +257,7 @@ public class Registry implements Node {
 
     public static void main(String[] args) {
 
-        LogConfig.init(Level.INFO);
+        LogConfig.init(Level.WARNING);
 
         Registry reg = new Registry(Integer.parseInt(args[0]));
         new Thread(reg::startRegistry).start();
