@@ -87,6 +87,11 @@ public class MessagingNode implements Node {
         else if(event.getType() == Protocol.LINK_WEIGHTS) {
             System.out.println("Link weights received and processed. Ready to send messages.");
         }
+        else if(event.getType() == Protocol.TASK_INITIATE){
+            TaskInitiate ti = (TaskInitiate) event;
+            log.info("Received task initiate from Registry with " + ti.numRounds + " rounds...");
+            // begin message sending
+        }
     }
 
     public void connect(int numConnections) {

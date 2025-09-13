@@ -180,6 +180,13 @@ public class Registry implements Node {
                         sendLinkWeights();
                         System.out.println("link weights assigned");
                         break;
+                    case "start":
+                        int numRounds = 0;
+                        if(splitCommand.length > 1) {
+                            numRounds = Integer.parseInt(splitCommand[1]);
+                        }
+                        sendTaskInitiate(numRounds);
+                        break;
                     case "print-connections":
                         printConnections();
                         break;
@@ -195,6 +202,14 @@ public class Registry implements Node {
             }
         } catch(Exception e) {
             System.err.println("[Registry] Exception in terminal reader...");
+        }
+    }
+
+    private void sendTaskInitiate(int numRounds) throws IOException {
+        log.info("Sending task initate command to messaging nodes...");
+        TaskInitiate ti = new TaskInitiate(Protocol.TASK_INITIATE, numRounds);
+        for(TCPConnection conn : openConnections) {
+            conn.sender.sendData(ti.getBytes());
         }
     }
     
