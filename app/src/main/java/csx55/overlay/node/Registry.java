@@ -196,12 +196,23 @@ public class Registry implements Node {
                     case "print-connection-map":
                         printConnectionMap();
                         break;
+                    case "test-tsr":
+                        sendTrafficSummaryRequest();
+                        break;
                     default:
                         break;
                 }
             }
         } catch(Exception e) {
             System.err.println("[Registry] Exception in terminal reader...");
+        }
+    }
+
+    private void sendTrafficSummaryRequest() throws IOException {
+        log.info("Sending request for traffic summary to messaginge nodes...");
+        TaskSummaryRequest tsr = new TaskSummaryRequest(Protocol.PULL_TRAFFIC_SUMMARY);
+        for(TCPConnection conn : openConnections) {
+            conn.sender.sendData(tsr.getBytes());
         }
     }
 

@@ -148,7 +148,7 @@ public class EventFactory {
                     return lw;
                 case Protocol.TASK_INITIATE:
                     // decode data into TaskInitiate event
-                    log.info("\tDecoding data inot a TaskInitiate object....");
+                    log.info("\tDecoding data into a TaskInitiate object....");
                     int numRounds = dis.readInt();
                     bais.close();
                     dis.close();
@@ -166,6 +166,13 @@ public class EventFactory {
                     dis.close();
                     TaskComplete taskComplete = new TaskComplete(messageType, ip, port);
                     return taskComplete;
+                case Protocol.PULL_TRAFFIC_SUMMARY:
+                    // decode data into TaskSummaryRequest event
+                    log.info("\tDecoding data into a TaskSummaryRequest object...");
+                    bais.close();
+                    dis.close();
+                    TaskSummaryRequest tsr = new TaskSummaryRequest(messageType);
+                    return tsr;
                 default:
                     log.warning("Unknown protocol passed to EventFactory...");
             }

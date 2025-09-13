@@ -92,6 +92,11 @@ public class MessagingNode implements Node {
             log.info("Received task initiate from Registry with " + ti.numRounds + " rounds...");
             // begin message sending
         }
+        else if(event.getType() == Protocol.PULL_TRAFFIC_SUMMARY) {
+            TaskSummaryRequest tsr = (TaskSummaryRequest) event;
+            log.info("Received task summary request from Registry. Sending back requested information...");
+            // create TaskSummaryResponse to send back to Registry
+        }
     }
 
     public void connect(int numConnections) {
