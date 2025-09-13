@@ -146,6 +146,18 @@ public class EventFactory {
                     dis.close();
                     LinkWeights lw = new LinkWeights(messageType, dummyData);
                     return lw;
+                case Protocol.TASK_COMPLETE:
+                    // decode data into TaskComplete event
+                    LOG.info("\tDecoding data into a TaskComplete object...");
+                    ipLength = dis.readInt();
+                    ipBytes = new byte[ipLength];
+                    dis.readFully(ipBytes);
+                    ip = new String(ipBytes);
+                    port = dis.readInt();
+                    bais.close();
+                    dis.close();
+                    TaskComplete taskComplete = new TaskComplete(messageType, ip, port);
+                    return taskComplete;
                 default:
                     LOG.warning("Unknown protocol passed to EventFactory...");
             }
