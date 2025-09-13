@@ -91,6 +91,12 @@ public class MinimumSpanningTree {
         }
     }
 
+    public List<Edge> findPath(String start, String sink) {
+        // convert mst list to adjacency list?
+        // bfs/dfs to creat path
+        return null;
+    }
+
     public void printMST() { // need to change to BFS format later
         for(Edge e : mst) {
             System.out.println(e);
