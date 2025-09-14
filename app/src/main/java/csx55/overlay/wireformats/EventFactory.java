@@ -12,7 +12,7 @@ import java.util.logging.*;
 
 public class EventFactory {
 
-    private byte[] data;
+    private final byte[] data;
 
     private static final Logger log = Logger.getLogger(EventFactory.class.getName());
 
@@ -25,6 +25,9 @@ public class EventFactory {
         try (ByteArrayInputStream bais = new ByteArrayInputStream(data); DataInputStream dis = new DataInputStream(bais)) {
 
             int messageType = dis.readInt();
+            String ip;
+            int port;
+            int numConnections;
 
             log.info("New event being created...");
 
@@ -32,8 +35,8 @@ public class EventFactory {
                 case Protocol.REGISTER_REQUEST:
                     // decode data into Register event
                     log.info("\tDecoding data into a Register object...");
-                    String ip = readString(dis);
-                    int port = dis.readInt();
+                    ip = readString(dis);
+                    port = dis.readInt();
                     Register register_request = new Register(messageType, ip, port);
                     return register_request;
                 case Protocol.DEREGISTER_REQUEST:
@@ -51,7 +54,7 @@ public class EventFactory {
                 case Protocol.MESSAGING_NODES_LIST:
                     // decode data into MessagingNodesList event
                     log.info("\tDecoding data into a MessagingNodesList object...");
-                    int numConnections = dis.readInt();
+                    numConnections = dis.readInt();
                     List<Tuple> peers = readPeers(dis, numConnections);
                     MessagingNodesList node_list = new MessagingNodesList(messageType, numConnections, peers);
                     return node_list;
