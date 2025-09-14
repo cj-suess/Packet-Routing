@@ -12,10 +12,9 @@ import java.util.logging.*;
 
 public class EventFactory {
 
-    byte[] data;
-    int messageType;
+    private final byte[] data;
 
-    private Logger log = Logger.getLogger(EventFactory.class.getName());
+    private static final Logger log = Logger.getLogger(EventFactory.class.getName());
 
     public EventFactory(byte[] data) {
         this.data = data;
@@ -23,25 +22,12 @@ public class EventFactory {
 
     public Event createEvent() {
 
-        try {
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(data); DataInputStream dis = new DataInputStream(bais)) {
 
-            ByteArrayInputStream bais = new ByteArrayInputStream(data);
-            DataInputStream dis = new DataInputStream(bais);
-            messageType = dis.readInt();
-
+            int messageType = dis.readInt();
             String ip;
             int port;
-            int ipLength;
-            byte[] ipBytes;
-
-            byte statusCode;
-            String info = null;
-            int infoLength = 0;
-            byte[] infoBytes = null;
-
             int numConnections;
-            List<Tuple> peers = new ArrayList<>();
-            int weight = 0;
 
             log.info("New event being created...");
 
@@ -49,75 +35,29 @@ public class EventFactory {
                 case Protocol.REGISTER_REQUEST:
                     // decode data into Register event
                     log.info("\tDecoding data into a Register object...");
-                    ipLength = dis.readInt();
-                    ipBytes = new byte[ipLength];
-                    dis.readFully(ipBytes);
-                    ip = new String(ipBytes);
+                    ip = readString(dis);
                     port = dis.readInt();
-                    bais.close();
-                    dis.close();
                     Register register_request = new Register(messageType, ip, port);
                     return register_request;
                 case Protocol.DEREGISTER_REQUEST:
                     // decode into Deregister event
                     log.info("\tDecoding data into a Deregister object...");
-                    ipLength = dis.readInt();
-                    ipBytes = new byte[ipLength];
-                    dis.readFully(ipBytes);
-                    ip = new String(ipBytes);
+                    ip = readString(dis);
                     port = dis.readInt();
-                    bais.close();
-                    dis.close();
                     Deregister deregister_request = new Deregister(messageType, ip, port);
                     return deregister_request;
                 case Protocol.REGISTER_RESPONSE:
-                    // decode data into Message event
-                    log.info("\tDecoding data into a Message object...");
-                    statusCode = dis.readByte();
-                    infoLength = dis.readInt();
-                    infoBytes = new byte[infoLength];
-                    dis.readFully(infoBytes);
-                    info = new String(infoBytes);
-                    bais.close();
-                    dis.close();
-                    Message register_response = new Message(messageType, statusCode, info);
-                    return register_response;
                 case Protocol.DEREGISTER_RESPONSE:
-                    // decode data into Message event
+                case Protocol.NODE_ID:
                     log.info("\tDecoding data into a Message object...");
-                    statusCode = dis.readByte();
-                    infoLength = dis.readInt();
-                    infoBytes = new byte[infoLength];
-                    dis.readFully(infoBytes);
-                    info = new String(infoBytes);
-                    bais.close();
-                    dis.close();
-                    Message deregister_response = new Message(messageType, statusCode, info);
-                    return deregister_response;
+                    return readStatusMessage(messageType, dis);
                 case Protocol.MESSAGING_NODES_LIST:
                     // decode data into MessagingNodesList event
                     log.info("\tDecoding data into a MessagingNodesList object...");
                     numConnections = dis.readInt();
-                    for(int i = 0; i < numConnections; i++) {
-                        Tuple t = createPeer(dis, info, infoLength, infoBytes, weight);
-                        peers.add(t);
-                    }
-                    bais.close();
-                    dis.close();
+                    List<Tuple> peers = readPeers(dis, numConnections);
                     MessagingNodesList node_list = new MessagingNodesList(messageType, numConnections, peers);
                     return node_list;
-                case Protocol.NODE_ID:
-                    // decode data into Message event
-                    log.info("\tDecoding data into a Message object...");
-                    statusCode = dis.readByte();
-                    infoLength = dis.readInt();
-                    infoBytes = new byte[infoLength];
-                    dis.readFully(infoBytes);
-                    info = new String(infoBytes);
-                    bais.close();
-                    dis.close();
-                    Message idMessage = new Message(messageType, statusCode, info);
-                    return idMessage;
                 case Protocol.OVERLAY:
                     // decode data into Overlay event
                     log.info("\tDecoding data into a Overlay object...");
@@ -125,52 +65,31 @@ public class EventFactory {
                     int numNodes = dis.readInt();
                     numConnections = dis.readInt();
                     for(int i = 0; i < numNodes; i++) {
-                        int idLength = dis.readInt();
-                        byte[] idBytes = new byte[idLength];
-                        dis.readFully(idBytes);
-                        String id = new String(idBytes);
-                        List<Tuple> list = new ArrayList<>();
-                        for(int j = 0; j < numConnections; j++) {
-                            Tuple t = createPeer(dis, info, infoLength, infoBytes, weight);
-                            list.add(t);
-                        }
-                        overlay.put(id, list);
+                        String id = readString(dis);
+                        overlay.put(id, readPeers(dis, numConnections));
                     }
-                    bais.close();
-                    dis.close();
                     Overlay overlayMessage = new Overlay(messageType, numNodes, numConnections, overlay);
                     return overlayMessage;
                 case Protocol.LINK_WEIGHTS:
                     int dummyData = dis.readInt();
-                    bais.close();
-                    dis.close();
                     LinkWeights lw = new LinkWeights(messageType, dummyData);
                     return lw;
                 case Protocol.TASK_INITIATE:
                     // decode data into TaskInitiate event
                     log.info("\tDecoding data into a TaskInitiate object....");
                     int numRounds = dis.readInt();
-                    bais.close();
-                    dis.close();
                     TaskInitiate ti = new TaskInitiate(messageType, numRounds);
                     return ti;
                 case Protocol.TASK_COMPLETE:
                     // decode data into TaskComplete event
                     log.info("\tDecoding data into a TaskComplete object...");
-                    ipLength = dis.readInt();
-                    ipBytes = new byte[ipLength];
-                    dis.readFully(ipBytes);
-                    ip = new String(ipBytes);
+                    ip = readString(dis);
                     port = dis.readInt();
-                    bais.close();
-                    dis.close();
                     TaskComplete taskComplete = new TaskComplete(messageType, ip, port);
                     return taskComplete;
                 case Protocol.PULL_TRAFFIC_SUMMARY:
                     // decode data into TaskSummaryRequest event
                     log.info("\tDecoding data into a TaskSummaryRequest object...");
-                    bais.close();
-                    dis.close();
                     TaskSummaryRequest tsr = new TaskSummaryRequest(messageType);
                     return tsr;
                 default:
@@ -182,13 +101,31 @@ public class EventFactory {
         return null;
     }
 
-    private Tuple createPeer(DataInputStream dis, String info, int infoLength, byte[] infoBytes, int weight) throws IOException {
-        infoLength = dis.readInt();
-        infoBytes = new byte[infoLength];
-        dis.readFully(infoBytes);
-        info = new String(infoBytes);
-        weight = dis.readInt();
+    private static Tuple createPeer(DataInputStream dis) throws IOException {
+        String info = readString(dis);
+        int weight = dis.readInt();
         return new Tuple(info, weight);
+    }
+
+    private static String readString(DataInputStream dis) throws IOException {
+        int length = dis.readInt();
+        byte[] bytes = new byte[length];
+        dis.readFully(bytes);
+        return new String(bytes);
+    }
+
+    private static Message readStatusMessage(int messageType, DataInputStream dis) throws IOException {
+        byte statusCode = dis.readByte();
+        String info = readString(dis);
+        return new Message(messageType, statusCode, info);
+    }
+
+    private static List<Tuple> readPeers(DataInputStream dis, int numConnections) throws IOException {
+        List<Tuple> peers = new ArrayList<>();
+        for(int i = 0; i < numConnections; i++) {
+            peers.add(createPeer(dis));
+        }
+        return peers;
     }
 
 }

@@ -196,14 +196,11 @@ public class Registry implements Node {
                     case "print-connection-map":
                         printConnectionMap();
                         break;
-                    case "test-tsr":
-                        sendTrafficSummaryRequest();
-                        break;
                     default:
                         break;
                 }
             }
-        } catch(Exception e) {
+        } catch(IOException e) {
             System.err.println("[Registry] Exception in terminal reader...");
         }
     }
@@ -280,10 +277,14 @@ public class Registry implements Node {
     }
 
     public void listWeights() {
-        for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()){
-            for(Tuple t : entry.getValue()){
-                System.out.println(entry.getKey() + ", " + t);
+        if(connectionMap != null) {
+            for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()){
+                for(Tuple t : entry.getValue()){
+                    System.out.println(entry.getKey() + ", " + t);
+                }
             }
+        } else {
+            log.warning("Connection map is null. Try again after setting up overlay...");
         }
     }
 
