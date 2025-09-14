@@ -1,47 +1,39 @@
 package csx55.overlay.node;
 
-import csx55.overlay.transport.TCPReceiverThread;
-import csx55.overlay.transport.TCPSender;
-import csx55.overlay.util.LogConfig;
-import csx55.overlay.util.OverlayCreator;
-import csx55.overlay.util.Tuple;
-import csx55.overlay.spanning.MinimumSpanningTree;
-import csx55.overlay.transport.TCPConnection;
+import csx55.overlay.transport.*;
+import csx55.overlay.util.*;
 import csx55.overlay.wireformats.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.logging.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
-
-import javax.imageio.IIOException;
-
-import java.util.logging.Level;
+import csx55.overlay.spanning.MinimumSpanningTree;
 
 public class MessagingNode implements Node {
 
     // Node info
     private volatile boolean registered;
-    ServerSocket serverSocket;
-    int serverPort;
+    private volatile ServerSocket serverSocket;
+    private volatile int serverPort;
 
     // Registry info
-    String registryIP;
-    int registryPort;
-    Socket registrySocket;
-    TCPSender registrySender;
-    TCPReceiverThread registryReceiver;
+    private final String registryIP;
+    private final int registryPort;
+    private volatile Socket registrySocket;
+    private volatile TCPSender registrySender;
+    private volatile TCPReceiverThread registryReceiver;
 
     // Connected messaging nodes
-    List<Tuple> connectionList;
-    Map<String, TCPConnection> openConnections;
-    Map<Socket, TCPConnection> socketToConn;
+    private final Map<String, TCPConnection> openConnections = new ConcurrentHashMap<>();
+    private final Map<Socket, TCPConnection> socketToConn = new ConcurrentHashMap<>();
 
     // Overlay
-    Map<String, List<Tuple>> overlay;
+    private volatile Map<String, List<Tuple>> overlay = Map.of();
+    private volatile List<Tuple> connectionList = List.of();
 
     // MST
-    MinimumSpanningTree mst;
+    private volatile MinimumSpanningTree mst;
 
     //Logging
     private volatile String nodeID = "NO ID";
@@ -52,10 +44,6 @@ public class MessagingNode implements Node {
         this.registryIP = registryIP;
         this.registryPort = registryPort;
         this.registered = false;
-        connectionList = new ArrayList<>();
-        openConnections = new ConcurrentHashMap<>();
-        socketToConn = new ConcurrentHashMap<>();
-        overlay = new HashMap<>();
     }
 
     public void onEvent(Event event, Socket socket) {
@@ -71,7 +59,7 @@ public class MessagingNode implements Node {
         }
         else if(event.getType() == Protocol.MESSAGING_NODES_LIST) {
             MessagingNodesList conn = (MessagingNodesList) event;
-            connectionList = conn.getPeers();
+            connectionList = Collections.unmodifiableList(conn.getPeers());
             connect(conn.numConnections);
         }
         else if(event.getType() == Protocol.NODE_ID){
@@ -82,7 +70,7 @@ public class MessagingNode implements Node {
         }
         else if(event.getType() == Protocol.OVERLAY) {
             Overlay o = (Overlay) event;
-            overlay = o.overlay;
+            overlay = Collections.unmodifiableMap(o.overlay);
         }
         else if(event.getType() == Protocol.LINK_WEIGHTS) {
             System.out.println("Link weights received and processed. Ready to send messages.");
@@ -100,7 +88,7 @@ public class MessagingNode implements Node {
     }
 
     public void connect(int numConnections) {
-        log.info(() -> "Received " + numConnections + " conenctions from registry.");
+        log.info(() -> "Received " + numConnections + " connections from registry.");
         for(Tuple t : connectionList) {
             try {
                 String remoteNodeID = t.getEndpoint();
@@ -145,7 +133,7 @@ public class MessagingNode implements Node {
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> { // needed if the terminal crashes so the node deregisters. not sure if I can catch it elsewhere
                 try {
-                    if(registered == true) { deregister(); }
+                    if(registered) { deregister(); }
                     serverSocket.close();
                 } catch(IOException e) {
                     System.err.println("Exception while trying to clean up after sudden termination...");
@@ -166,38 +154,34 @@ public class MessagingNode implements Node {
     }
 
     public void readTerminal() {
-        try {
-            Scanner scanner = new Scanner(System.in);
-            while(true) {
-                String command = scanner.nextLine();
-                switch (command) {
-                    case "exit-overlay":
-                        if(registered == true) { deregister(); }
-                        System.out.println("exited overlay");
-                        break;
-                    case "register":
-                        register();
-                        break;
-                    case "deregister":
-                        deregister();
-                        break;
-                    case "print-connections":
-                        printConnectionList();
-                        break;
-                    case "print-overlay":
-                        printOverlay();
-                        break;
-                    case "print-mst":
-                        OverlayCreator oc = new OverlayCreator();
-                        mst = new MinimumSpanningTree(overlay, oc);
-                        mst.printMST();
-                        break;
-                    default:
-                        break;
-                }
+        Scanner scanner = new Scanner(System.in);
+        while(true) {
+            String command = scanner.nextLine();
+            switch (command) {
+                case "exit-overlay":
+                    if(registered) { deregister(); }
+                    System.out.println("exited overlay");
+                    break;
+                case "register":
+                    register();
+                    break;
+                case "deregister":
+                    deregister();
+                    break;
+                case "print-connections":
+                    printConnectionList();
+                    break;
+                case "print-overlay":
+                    printOverlay();
+                    break;
+                case "print-mst":
+                    OverlayCreator oc = new OverlayCreator();
+                    mst = new MinimumSpanningTree(overlay, oc);
+                    mst.printMST();
+                    break;
+                default:
+                    break;
             }
-        } catch(Exception e) {
-            log.warning("Exception in terminal reader..." + e.getMessage());
         }
     }
 
@@ -216,8 +200,8 @@ public class MessagingNode implements Node {
                 registrySender.sendData(registerRequest.getBytes());
             }
             
-        } catch (Exception e) {
-            log.warning("Exception while registering node with registry...");
+        } catch (IOException e) {
+            log.warning("Exception while registering node with registry..." + e.getMessage());
         }
     }
 
@@ -236,7 +220,7 @@ public class MessagingNode implements Node {
             TaskComplete tc = new TaskComplete(Protocol.TASK_COMPLETE, InetAddress.getLocalHost().getHostAddress(), serverPort);
             registrySender.sendData(tc.getBytes());
         } catch(IOException e) {
-            log.warning(e.getLocalizedMessage());
+            log.warning(e.getMessage());
         }
    }
 
