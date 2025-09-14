@@ -35,6 +35,13 @@ public class MessagingNode implements Node {
     // MST
     private volatile MinimumSpanningTree mst;
 
+    // Message tracking
+    private volatile int sendTracker;
+    private volatile int receiveTracker;
+    private volatile int relayTracker;
+    private volatile long sendSummation;
+    private volatile long receiveSummation;
+
     //Logging
     private volatile String nodeID = "NO ID";
     private Logger log = Logger.getLogger(MessagingNode.class.getName());
@@ -79,6 +86,7 @@ public class MessagingNode implements Node {
             TaskInitiate ti = (TaskInitiate) event;
             log.info("Received task initiate from Registry with " + ti.numRounds + " rounds...");
             // begin message sending
+            sendMessages(ti.numRounds);
         }
         else if(event.getType() == Protocol.PULL_TRAFFIC_SUMMARY) {
             TaskSummaryRequest tsr = (TaskSummaryRequest) event;
@@ -87,7 +95,13 @@ public class MessagingNode implements Node {
         }
     }
 
-    public void connect(int numConnections) {
+    private void sendMessages(int numRounds) {
+        for(int i = 0; i < numRounds; i++) {
+            int randInt = new Random().nextInt();
+        }
+    }
+
+    private void connect(int numConnections) {
         log.info(() -> "Received " + numConnections + " connections from registry.");
         for(Tuple t : connectionList) {
             try {
@@ -108,20 +122,20 @@ public class MessagingNode implements Node {
         System.out.println("All connections are established. Number of connections: " + numConnections);
     }
 
-    public void printConnectionList() {
+    private void printConnectionList() {
         log.info("Printing My Connections: ");
         for(Map.Entry<String, TCPConnection> entry : openConnections.entrySet()) {
             log.info("Connected NodeID: " + entry.getKey());
         }
     }
 
-    public void printOverlay() {
+    private void printOverlay() {
         for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()) {
             log.info(entry.toString());
         }
     }
 
-    public void startNode() {
+    private void startNode() {
         try {
             serverSocket = new ServerSocket(0);
             serverPort = serverSocket.getLocalPort();
@@ -153,7 +167,7 @@ public class MessagingNode implements Node {
         }
     }
 
-    public void readTerminal() {
+    private void readTerminal() {
         Scanner scanner = new Scanner(System.in);
         while(true) {
             String command = scanner.nextLine();
@@ -185,7 +199,7 @@ public class MessagingNode implements Node {
         }
     }
 
-    public void register() {
+    private void register() {
         try {
             if(registrySender == null) {
                 registrySocket = new Socket(registryIP, registryPort);
@@ -205,7 +219,7 @@ public class MessagingNode implements Node {
         }
     }
 
-    public void deregister() {
+    private void deregister() {
         log.info("Deregistering node...");
             Deregister deregisterRequest = new Deregister(Protocol.DEREGISTER_REQUEST, registrySocket.getLocalAddress().getHostAddress(), serverPort);
             try {
@@ -215,7 +229,7 @@ public class MessagingNode implements Node {
             }
     }
 
-   public void sendTaskComplete() {
+   private void sendTaskComplete() {
         try {
             TaskComplete tc = new TaskComplete(Protocol.TASK_COMPLETE, InetAddress.getLocalHost().getHostAddress(), serverPort);
             registrySender.sendData(tc.getBytes());

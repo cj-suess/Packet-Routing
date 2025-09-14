@@ -11,15 +11,13 @@ public class MinimumSpanningTree {
 
     Map<String, List<Tuple>> overlay;
     OverlayCreator oc;
-    Map<String, Integer> nodes; // make a map?
-    List<Edge> edges;
-    List<Edge> mst;
+    Map<String, Integer> nodes = new HashMap<>();
+    List<Edge> edges = new ArrayList<>();
+    List<Edge> mst = new ArrayList<>();
+    Map<String, List<Tuple>> adjList = new HashMap<>();
 
     public MinimumSpanningTree(Map<String, List<Tuple>> overlay, OverlayCreator oc) {
         this.overlay = overlay;
-        this.nodes = new HashMap<>();
-        this.edges = new ArrayList<>();
-        this.mst = new ArrayList<>();
         this.oc = oc;
 
         for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()){
@@ -28,6 +26,7 @@ public class MinimumSpanningTree {
 
         createEdges();
         generateMST(edges, mst);
+        createAdjList();
     }
 
     public void printNodes() {
@@ -91,9 +90,21 @@ public class MinimumSpanningTree {
         }
     }
 
+    private void createAdjList() {
+        for(Edge edge : mst) {
+            adjList.computeIfAbsent(edge.nodeA, connectedNode -> new ArrayList<>()).add(new Tuple(edge.nodeB, edge.weight));
+            adjList.computeIfAbsent(edge.nodeB, connectedNode -> new ArrayList<>()).add(new Tuple(edge.nodeA, edge.weight));
+        }
+    }
+
+    public void printAdjList() {
+        for(Map.Entry<String, List<Tuple>> entry : adjList.entrySet()) {
+            LOG.info(entry.toString());
+        }
+    }
+
     public List<Edge> findPath(String start, String sink) {
-        // convert mst list to adjacency list?
-        // bfs/dfs to creat path
+        // bfs ajdList to find path
         return null;
     }
 
