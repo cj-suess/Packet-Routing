@@ -96,14 +96,21 @@ public class MessagingNode implements Node {
     }
 
     private void sendMessages(int numRounds) {
-        // convert to list to get random node
-        List<String> keys = new ArrayList<>(overlay.keySet());
-        keys.remove(nodeID); // remove self
-        for(int i = 0; i < numRounds; i++) {
-            int payload = new Random().nextInt();
-            String randNode = keys.get(new Random().nextInt(keys.size()));
-            Queue<String> path = mst.findPath(nodeID, randNode); // might need to change to something else
-            
+        try {
+            // convert to list to get random node
+            List<String> keys = new ArrayList<>(overlay.keySet());
+            keys.remove(nodeID); // remove self
+            for(int i = 0; i < numRounds; i++) {
+                int randNum = new Random().nextInt();
+                String randNode = keys.get(new Random().nextInt(keys.size()));
+                Queue<String> path = mst.findPath(nodeID, randNode); // might need to change to something else
+                Payload payload = new Payload(Protocol.PAYLOAD, randNum, path);
+                openConnections.get(path.poll()).sender.sendData(payload.getBytes());
+                sendSummation += randNum;
+                sendTracker++;
+            }
+        } catch(IOException e) {
+            log.warning("Exception while sending a message ocurred..." + e.getMessage());
         }
     }
 
