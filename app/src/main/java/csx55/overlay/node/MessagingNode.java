@@ -97,7 +97,12 @@ public class MessagingNode implements Node {
 
     private void sendMessages(int numRounds) {
         for(int i = 0; i < numRounds; i++) {
-            int randInt = new Random().nextInt();
+            int payload = new Random().nextInt();
+            // pick random node to send message to
+            List<String> keys = new ArrayList<>(overlay.keySet());
+            keys.remove(nodeID);
+            String randNode = keys.get(new Random().nextInt(keys.size()));
+            Queue<String> path = mst.findPath(nodeID, randNode); // might need to change to something else
         }
     }
 

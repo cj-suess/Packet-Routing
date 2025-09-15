@@ -14,7 +14,7 @@ public class MinimumSpanningTree {
     Map<String, Integer> nodes = new HashMap<>();
     List<Edge> edges = new ArrayList<>();
     List<Edge> mst = new ArrayList<>();
-    Map<String, List<Tuple>> adjList = new HashMap<>();
+    Map<String, List<String>> adjList = new HashMap<>();
 
     public MinimumSpanningTree(Map<String, List<Tuple>> overlay, OverlayCreator oc) {
         this.overlay = overlay;
@@ -92,20 +92,47 @@ public class MinimumSpanningTree {
 
     private void createAdjList() {
         for(Edge edge : mst) {
-            adjList.computeIfAbsent(edge.nodeA, connectedNode -> new ArrayList<>()).add(new Tuple(edge.nodeB, edge.weight));
-            adjList.computeIfAbsent(edge.nodeB, connectedNode -> new ArrayList<>()).add(new Tuple(edge.nodeA, edge.weight));
+            adjList.computeIfAbsent(edge.nodeA, connectedNode -> new ArrayList<>()).add(edge.nodeB);
+            adjList.computeIfAbsent(edge.nodeB, connectedNode -> new ArrayList<>()).add(edge.nodeA);
         }
     }
 
     public void printAdjList() {
-        for(Map.Entry<String, List<Tuple>> entry : adjList.entrySet()) {
+        for(Map.Entry<String, List<String>> entry : adjList.entrySet()) {
             LOG.info(entry.toString());
         }
     }
 
-    public List<Edge> findPath(String start, String sink) {
-        // bfs ajdList to find path
-        return null;
+    public Queue<String> findPath(String source, String sink) {
+
+        Queue<String> queue = new LinkedList<>();
+        Set<String> visited = new HashSet<>();
+        Map<String,String> previous = new HashMap<>();
+        Queue<String> path = new LinkedList<>(); // might need to change to something else
+
+        queue.add(source);
+        visited.add(source);
+        while(!queue.isEmpty()){
+            String curr = queue.poll();
+            if(curr == sink) { break; }
+            List<String> neighbors = adjList.get(curr);
+            if(neighbors == null) { continue; }
+            for(String n : neighbors) {
+                if(!visited.contains(n)){
+                    visited.add(n);
+                    previous.put(n, curr);
+                    queue.add(n);
+                }
+            }
+        }
+        if(previous.containsKey(sink)){
+            String curr = sink;
+            while(curr != source) {
+                path.add(curr);
+                curr = previous.get(curr);
+            }
+        }
+        return path;
     }
 
     public void printMST() { // need to change to BFS format later
