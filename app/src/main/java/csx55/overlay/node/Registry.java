@@ -117,9 +117,31 @@ public class Registry implements Node {
                 summaryReport.get(socketAddress + ":" + socket.getPort()).add((long) tsr.sendSummation);
                 summaryReport.get(socketAddress + ":" + socket.getPort()).add((long) tsr.receiveSummation);
                 summaryReport.get(socketAddress + ":" + socket.getPort()).add((long) tsr.relayTracker);
+
+                if(summaryReport.size() == registeredNodes.size()){
+                    addSummaryReportSummation();
+                    // printSummaryReport();
+                }
             }
         } catch(IOException e) {
             log.warning("Exception in registery while handling an event...");
+        }
+    }
+
+    private void addSummaryReportSummation() {
+       List<Long> finalRow = summaryReport.values().stream().reduce(Arrays.asList(0L, 0L, 0L, 0L, 0L), (x,y) -> Arrays.asList(
+            x.get(0) + y.get(0),
+            x.get(1) + y.get(1),
+            x.get(2) + y.get(2),
+            x.get(3) + y.get(3),
+            0L
+       ));
+       summaryReport.put("Sum", finalRow);
+    }
+
+    private void printSummaryReport() {
+        for(Map.Entry<String, List<Long> entry : summaryReport.entrySet()){
+            
         }
     }
 
