@@ -22,8 +22,10 @@ public class Registry implements Node {
     int connections = 0;
 
     Set<String> registeredNodes;
+    Set<String> finishedNodes;
     Map<String, List<Tuple>> overlay; // grab messaging node ip and match with correct socket in openConnections
     Map<String, List<Tuple>> connectionMap; // use for relaying who connects to who to avoid duplicate connections
+    Map<String, List<Long>> summaryReport;
 
     //Logging
     private Logger log = Logger.getLogger(Registry.class.getName());
@@ -102,7 +104,19 @@ public class Registry implements Node {
                 String nodeID = taskComplete.ip + ":" + taskComplete.port;
                 // mark node as complete
                 log.info("Received task complete message from " + nodeID);
-                log.info("Need to implement marking node as complete still...");
+                finishedNodes.add(nodeID);
+                summaryReport.put(nodeID, new ArrayList<>());
+                if(finishedNodes.size() == registeredNodes.size()) {
+                    sendTrafficSummaryRequest();
+                }
+            }
+            else if(event.getType() == Protocol.TRAFFIC_SUMMARY) {
+                TaskSummaryResponse tsr = (TaskSummaryResponse) event;
+                summaryReport.get(socketAddress + ":" + socket.getPort()).add((long) tsr.sendTracker);
+                summaryReport.get(socketAddress + ":" + socket.getPort()).add((long) tsr.receiveTracker);
+                summaryReport.get(socketAddress + ":" + socket.getPort()).add((long) tsr.sendSummation);
+                summaryReport.get(socketAddress + ":" + socket.getPort()).add((long) tsr.receiveSummation);
+                summaryReport.get(socketAddress + ":" + socket.getPort()).add((long) tsr.relayTracker);
             }
         } catch(IOException e) {
             log.warning("Exception in registery while handling an event...");

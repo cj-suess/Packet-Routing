@@ -93,8 +93,8 @@ public class EventFactory {
                 case Protocol.PULL_TRAFFIC_SUMMARY:
                     // decode data into TaskSummaryRequest event
                     log.info("\tDecoding data into a TaskSummaryRequest object...");
-                    TaskSummaryRequest tsr = new TaskSummaryRequest(messageType);
-                    return tsr;
+                    TaskSummaryRequest summaryRequest = new TaskSummaryRequest(messageType);
+                    return summaryRequest;
                 case Protocol.PAYLOAD:
                     // decode event into Payload object
                     log.info("\tDecoding data into a Payload object...");
@@ -103,6 +103,16 @@ public class EventFactory {
                     Queue<String> path = readPath(dis, pathSize);
                     Payload payload = new Payload(messageType, randNum, path);
                     return payload;
+                case Protocol.TRAFFIC_SUMMARY:
+                    // decode event into TaskSummaryResponse object
+                    log.info("\tDecoding data into a TaskSummaryResponse object...");
+                    int sendTracker = dis.readInt();
+                    int receiveTracker = dis.readInt();
+                    long sendSummation = dis.readLong();
+                    long receiveSummation = dis.readLong();
+                    int relayTracker = dis.readInt();
+                    TaskSummaryResponse summaryResponse = new TaskSummaryResponse(messageType, sendTracker, receiveTracker, sendSummation, receiveSummation, relayTracker);
+                    return summaryResponse;
                 default:
                     log.warning("Unknown protocol passed to EventFactory...");
             }
