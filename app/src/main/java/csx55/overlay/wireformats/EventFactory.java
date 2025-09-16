@@ -5,8 +5,11 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+
 import csx55.overlay.util.Tuple;
 import java.util.logging.*;
 
@@ -92,6 +95,14 @@ public class EventFactory {
                     log.info("\tDecoding data into a TaskSummaryRequest object...");
                     TaskSummaryRequest tsr = new TaskSummaryRequest(messageType);
                     return tsr;
+                case Protocol.PAYLOAD:
+                    // decode event into Payload object
+                    log.info("\tDecoding data into a Payload object...");
+                    int randNum = dis.readInt();
+                    int pathSize = dis.readInt();
+                    Queue<String> path = readPath(dis, pathSize);
+                    Payload payload = new Payload(messageType, randNum, path);
+                    return payload;
                 default:
                     log.warning("Unknown protocol passed to EventFactory...");
             }
@@ -99,6 +110,14 @@ public class EventFactory {
             log.info("Exception while decoding data...");
         }
         return null;
+    }
+
+    private static Queue<String> readPath(DataInputStream dis, int pathSize) throws IOException {
+        Queue<String> path = new LinkedList<>();
+        for(int i = 0; i < pathSize; i++) {
+            path.add(readString(dis));
+        }
+        return path;
     }
 
     private static Tuple createPeer(DataInputStream dis) throws IOException {

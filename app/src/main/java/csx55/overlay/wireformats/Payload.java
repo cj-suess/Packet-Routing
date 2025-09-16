@@ -25,6 +25,7 @@ public class Payload implements Event {
         
         dout.writeInt(messageType);
         dout.writeInt(payload);
+        dout.writeInt(path.size());
         writeStrings(dout, path);
         dout.flush();
         encodedData = baos.toByteArray();

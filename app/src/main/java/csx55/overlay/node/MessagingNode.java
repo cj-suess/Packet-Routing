@@ -36,11 +36,11 @@ public class MessagingNode implements Node {
     private volatile MinimumSpanningTree mst;
 
     // Message tracking
-    private volatile int sendTracker;
-    private volatile int receiveTracker;
-    private volatile int relayTracker;
-    private volatile long sendSummation;
-    private volatile long receiveSummation;
+    private volatile int sendTracker = 0; 
+    private volatile int receiveTracker = 0;
+    private volatile int relayTracker = 0;
+    private volatile long sendSummation = 0;
+    private volatile long receiveSummation = 0;
 
     //Logging
     private volatile String nodeID = "NO ID";
@@ -54,7 +54,10 @@ public class MessagingNode implements Node {
     }
 
     public void onEvent(Event event, Socket socket) {
-        if(event.getType() == Protocol.REGISTER_RESPONSE) {
+        if(event == null) {
+            log.warning("Null event received from event factory...");
+        }
+        else if(event.getType() == Protocol.REGISTER_RESPONSE) {
             Message message = (Message) event; // downcast back to Message
             System.out.println(message.info);
             if(message.statusCode == (byte)0) { registered = true; }
@@ -85,13 +88,32 @@ public class MessagingNode implements Node {
         else if(event.getType() == Protocol.TASK_INITIATE){
             TaskInitiate ti = (TaskInitiate) event;
             log.info("Received task initiate from Registry with " + ti.numRounds + " rounds...");
-            // begin message sending
             sendMessages(ti.numRounds);
         }
         else if(event.getType() == Protocol.PULL_TRAFFIC_SUMMARY) {
             TaskSummaryRequest tsr = (TaskSummaryRequest) event;
             log.info("Received task summary request from Registry. Sending back requested information...");
             // create TaskSummaryResponse to send back to Registry
+        }
+        else if(event.getType() == Protocol.PAYLOAD){
+            Payload payload = (Payload) event;
+            processPayload(payload);
+        }
+    }
+
+    private void processPayload(Payload incoming) {
+        try {
+            incoming.path.poll(); // consume self first?
+            if(incoming.path.isEmpty()) {
+                receiveSummation += incoming.payload;
+                receiveTracker++;
+            } else {
+                Payload outgoing = new Payload(Protocol.PAYLOAD, incoming.payload, incoming.path);
+                openConnections.get(incoming.path.peek()).sender.sendData(outgoing.getBytes());
+                relayTracker++;
+            }
+        } catch(IOException e) {
+            log.warning("Exception while processing payload..." + e.getMessage());
         }
     }
 
@@ -103,9 +125,9 @@ public class MessagingNode implements Node {
             for(int i = 0; i < numRounds; i++) {
                 int randNum = new Random().nextInt();
                 String randNode = keys.get(new Random().nextInt(keys.size()));
-                Queue<String> path = mst.findPath(nodeID, randNode); // might need to change to something else
+                LinkedList<String> path = mst.findPath(nodeID, randNode); // might need to change to something else
                 Payload payload = new Payload(Protocol.PAYLOAD, randNum, path);
-                openConnections.get(path.poll()).sender.sendData(payload.getBytes());
+                openConnections.get(path.peek()).sender.sendData(payload.getBytes());
                 sendSummation += randNum;
                 sendTracker++;
             }
@@ -206,10 +228,17 @@ public class MessagingNode implements Node {
                     mst = new MinimumSpanningTree(overlay, oc);
                     mst.printMST();
                     break;
+                case "print-data":
+                    printData();
+                    break;
                 default:
                     break;
             }
         }
+    }
+
+    private void printData() {
+        log.info("Sent Tracker: " + sendTracker + "\n\tRecevied Tracker: " + receiveTracker + "\n\tSent Summation: " + sendSummation + "\n\tReceved Summation: " + receiveSummation + "\n\tRelayed: " + relayTracker);
     }
 
     private void register() {

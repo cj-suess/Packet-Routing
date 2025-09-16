@@ -7,7 +7,7 @@ import java.util.logging.*;
 
 public class MinimumSpanningTree {
 
-    private Logger LOG = Logger.getLogger(MinimumSpanningTree.class.getName());
+    private Logger log = Logger.getLogger(MinimumSpanningTree.class.getName());
 
     Map<String, List<Tuple>> overlay;
     OverlayCreator oc;
@@ -31,7 +31,7 @@ public class MinimumSpanningTree {
 
     public void printNodes() {
         for(Map.Entry<String, Integer> entry : nodes.entrySet()) {
-            LOG.info(entry.getKey() + ", " + entry.getValue());
+            log.info(entry.getKey() + ", " + entry.getValue());
         }
     }
 
@@ -48,13 +48,13 @@ public class MinimumSpanningTree {
 
     public void printFilteredOverlay() {
         for(Map.Entry<String, List<Tuple>> entry : filteredOverlay.entrySet()){
-            LOG.info(entry.toString());
+            log.info(entry.toString());
         }
     }
 
     public void printEdges() {
         for(Edge e : edges) {
-            LOG.info(e.toString());
+            log.info(e.toString());
         }
     }
 
@@ -99,22 +99,22 @@ public class MinimumSpanningTree {
 
     public void printAdjList() {
         for(Map.Entry<String, List<String>> entry : adjList.entrySet()) {
-            LOG.info(entry.toString());
+            log.info(entry.toString());
         }
     }
 
-    public Queue<String> findPath(String source, String sink) {
+    public LinkedList<String> findPath(String source, String sink) {
 
         Queue<String> queue = new LinkedList<>();
         Set<String> visited = new HashSet<>();
         Map<String,String> previous = new HashMap<>();
-        Queue<String> path = new LinkedList<>(); // might need to change to something else
+        LinkedList<String> path = new LinkedList<>(); // might need to change to something else
 
         queue.add(source);
         visited.add(source);
         while(!queue.isEmpty()){
             String curr = queue.poll();
-            if(curr == sink) { break; }
+            if(curr.equals(sink)) { break; }
             List<String> neighbors = adjList.get(curr);
             if(neighbors == null) { continue; }
             for(String n : neighbors) {
@@ -127,8 +127,8 @@ public class MinimumSpanningTree {
         }
         if(previous.containsKey(sink)){
             String curr = sink;
-            while(curr != source) {
-                path.add(curr);
+            while(!curr.equals(source)) {
+                path.add(0, curr);
                 curr = previous.get(curr);
             }
         }
