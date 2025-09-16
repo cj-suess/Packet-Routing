@@ -7,14 +7,16 @@ import java.io.IOException;
 public class TaskSummaryResponse implements Event {
 
     int messageType;
+    public int serverPort;
     public int sendTracker; 
     public int receiveTracker;
     public long sendSummation;
     public long receiveSummation;
     public int relayTracker;
 
-    public TaskSummaryResponse(int messageType, int sendTracker, int receiveTracker, long sendSummation, long receiveSummation, int relayTracker) {
+    public TaskSummaryResponse(int messageType, int serverPort, int sendTracker, int receiveTracker, long sendSummation, long receiveSummation, int relayTracker) {
         this.messageType = messageType;
+        this.serverPort = serverPort;
         this.sendTracker = sendTracker;
         this.receiveTracker = receiveTracker;
         this.sendSummation = sendSummation;
@@ -34,12 +36,15 @@ public class TaskSummaryResponse implements Event {
         DataOutputStream dout = new DataOutputStream(baos);
         
         dout.writeInt(messageType);
+        dout.writeInt(serverPort);
         dout.writeInt(sendTracker);
         dout.writeInt(receiveTracker);
         dout.writeLong(sendSummation);
         dout.writeLong(receiveSummation);
         dout.writeInt(relayTracker);
         
+        dout.flush();
+        encodedData = baos.toByteArray();
         baos.close();
         dout.close();
         return encodedData;

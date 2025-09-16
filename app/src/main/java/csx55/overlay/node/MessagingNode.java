@@ -88,12 +88,30 @@ public class MessagingNode implements Node {
         else if(event.getType() == Protocol.TASK_INITIATE){
             TaskInitiate ti = (TaskInitiate) event;
             log.info("Received task initiate from Registry with " + ti.numRounds + " rounds...");
-            sendMessages(ti.numRounds);
+            // put on thread and wait for it to finish before informing Regsitry
+            Thread messagingThread = new Thread(() -> {
+                sendMessages(ti.numRounds);
+            });
+            messagingThread.start();
+            try {
+                messagingThread.join();
+                log.info("Messaging thread has finished...");
+                TaskComplete tc = new TaskComplete(Protocol.TASK_COMPLETE, registrySocket.getLocalAddress().getHostAddress(), serverPort);
+                registrySender.sendData(tc.getBytes());
+            } catch(InterruptedException ie) {
+                log.warning("InterruptedException while informing registry that all messages have been sent..." + ie.getMessage());
+            } catch(IOException ioe) {
+                log.warning("IOException while informing registry that all messages have been sent..." + ioe.getMessage());
+            }
         }
         else if(event.getType() == Protocol.PULL_TRAFFIC_SUMMARY) {
-            TaskSummaryRequest tsr = (TaskSummaryRequest) event;
-            log.info("Received task summary request from Registry. Sending back requested information...");
-            // create TaskSummaryResponse to send back to Registry
+            try {
+                log.info("Received task summary request from Registry. Sending back requested information...");
+                TaskSummaryResponse response = new TaskSummaryResponse(Protocol.TRAFFIC_SUMMARY, serverPort, sendTracker, receiveTracker, sendSummation, receiveSummation, relayTracker);
+                registrySender.sendData(response.getBytes());
+            } catch(IOException e) {
+                log.warning("Exception while sending TaskSummaryReport to Registry...." + e.getMessage());
+            }
         }
         else if(event.getType() == Protocol.PAYLOAD){
             Payload payload = (Payload) event;
@@ -238,7 +256,7 @@ public class MessagingNode implements Node {
     }
 
     private void printData() {
-        log.info("Sent Tracker: " + sendTracker + "\n\tRecevied Tracker: " + receiveTracker + "\n\tSent Summation: " + sendSummation + "\n\tReceved Summation: " + receiveSummation + "\n\tRelayed: " + relayTracker);
+        log.info("Sent Tracker: " + sendTracker + "\n\tReceived Tracker: " + receiveTracker + "\n\tSent Summation: " + sendSummation + "\n\tReceived Summation: " + receiveSummation + "\n\tRelayed: " + relayTracker);
     }
 
     private void register() {

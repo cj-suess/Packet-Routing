@@ -18,22 +18,21 @@ public class Registry implements Node {
     int port;
     ServerSocket serverSocket;
 
-    List<TCPConnection> openConnections;
+    List<TCPConnection> openConnections = new ArrayList<>();
     int connections = 0;
 
-    Set<String> registeredNodes;
-    Set<String> finishedNodes;
-    Map<String, List<Tuple>> overlay; // grab messaging node ip and match with correct socket in openConnections
-    Map<String, List<Tuple>> connectionMap; // use for relaying who connects to who to avoid duplicate connections
-    Map<String, List<Long>> summaryReport;
+    Set<String> registeredNodes = ConcurrentHashMap.newKeySet();
+    Set<String> finishedNodes = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    Map<String, List<Tuple>> overlay;
+    Map<String, List<Tuple>> connectionMap;
+    Map<String, List<Long>> summaryReport = new ConcurrentHashMap<>();
+    Map<String, List<Long>> finalRow = new ConcurrentHashMap<>();
 
     //Logging
     private Logger log = Logger.getLogger(Registry.class.getName());
 
     public Registry(int port) {
         this.port = port;
-        registeredNodes = ConcurrentHashMap.newKeySet(); // should work better using a single String?
-        openConnections =  new ArrayList<>();
     }
 
     public void onEvent(Event event, Socket socket) {
@@ -107,20 +106,27 @@ public class Registry implements Node {
                 finishedNodes.add(nodeID);
                 summaryReport.put(nodeID, new ArrayList<>());
                 if(finishedNodes.size() == registeredNodes.size()) {
+                    finalRow.put("sum", new ArrayList<>(Collections.nCopies(5, 0L)));
                     sendTrafficSummaryRequest();
+                    finishedNodes.clear();
                 }
             }
             else if(event.getType() == Protocol.TRAFFIC_SUMMARY) {
-                TaskSummaryResponse tsr = (TaskSummaryResponse) event;
-                summaryReport.get(socketAddress + ":" + socket.getPort()).add((long) tsr.sendTracker);
-                summaryReport.get(socketAddress + ":" + socket.getPort()).add((long) tsr.receiveTracker);
-                summaryReport.get(socketAddress + ":" + socket.getPort()).add((long) tsr.sendSummation);
-                summaryReport.get(socketAddress + ":" + socket.getPort()).add((long) tsr.receiveSummation);
-                summaryReport.get(socketAddress + ":" + socket.getPort()).add((long) tsr.relayTracker);
 
-                if(summaryReport.size() == registeredNodes.size()){
-                    addSummaryReportSummation();
-                    // printSummaryReport();
+                TaskSummaryResponse tsr = (TaskSummaryResponse) event;
+
+                summaryReport.get(socketAddress + ":" + tsr.serverPort).add((long) tsr.sendTracker);
+                summaryReport.get(socketAddress + ":" + tsr.serverPort).add((long) tsr.receiveTracker);
+                summaryReport.get(socketAddress + ":" + tsr.serverPort).add((long) tsr.sendSummation);
+                summaryReport.get(socketAddress + ":" + tsr.serverPort).add((long) tsr.receiveSummation);
+                summaryReport.get(socketAddress + ":" + tsr.serverPort).add((long) tsr.relayTracker);
+
+                String nodeID = socketAddress + ":" + tsr.serverPort;
+                finishedNodes.add(nodeID);
+
+                if(finishedNodes.size() == registeredNodes.size()) {
+                    // add final row
+                    printSummaryReport();
                 }
             }
         } catch(IOException e) {
@@ -128,20 +134,9 @@ public class Registry implements Node {
         }
     }
 
-    private void addSummaryReportSummation() {
-       List<Long> finalRow = summaryReport.values().stream().reduce(Arrays.asList(0L, 0L, 0L, 0L, 0L), (x,y) -> Arrays.asList(
-            x.get(0) + y.get(0),
-            x.get(1) + y.get(1),
-            x.get(2) + y.get(2),
-            x.get(3) + y.get(3),
-            0L
-       ));
-       summaryReport.put("Sum", finalRow);
-    }
-
     private void printSummaryReport() {
-        for(Map.Entry<String, List<Long> entry : summaryReport.entrySet()){
-            
+        for(Map.Entry<String, List<Long>> entry : summaryReport.entrySet()){
+            System.out.println(entry);
         }
     }
 
@@ -220,8 +215,8 @@ public class Registry implements Node {
                         int numRounds = 0;
                         if(splitCommand.length > 1) {
                             numRounds = Integer.parseInt(splitCommand[1]);
+                            sendTaskInitiate(numRounds);
                         }
-                        sendTaskInitiate(numRounds);
                         break;
                     case "print-connections":
                         printConnections();
@@ -242,7 +237,7 @@ public class Registry implements Node {
     }
 
     private void sendTrafficSummaryRequest() throws IOException {
-        log.info("Sending request for traffic summary to messaginge nodes...");
+        log.info("Sending request for traffic summary to messaging nodes...");
         TaskSummaryRequest tsr = new TaskSummaryRequest(Protocol.PULL_TRAFFIC_SUMMARY);
         for(TCPConnection conn : openConnections) {
             conn.sender.sendData(tsr.getBytes());

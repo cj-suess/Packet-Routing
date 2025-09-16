@@ -106,12 +106,13 @@ public class EventFactory {
                 case Protocol.TRAFFIC_SUMMARY:
                     // decode event into TaskSummaryResponse object
                     log.info("\tDecoding data into a TaskSummaryResponse object...");
+                    int serverPort = dis.readInt();
                     int sendTracker = dis.readInt();
                     int receiveTracker = dis.readInt();
                     long sendSummation = dis.readLong();
                     long receiveSummation = dis.readLong();
                     int relayTracker = dis.readInt();
-                    TaskSummaryResponse summaryResponse = new TaskSummaryResponse(messageType, sendTracker, receiveTracker, sendSummation, receiveSummation, relayTracker);
+                    TaskSummaryResponse summaryResponse = new TaskSummaryResponse(messageType, serverPort, sendTracker, receiveTracker, sendSummation, receiveSummation, relayTracker);
                     return summaryResponse;
                 default:
                     log.warning("Unknown protocol passed to EventFactory...");
