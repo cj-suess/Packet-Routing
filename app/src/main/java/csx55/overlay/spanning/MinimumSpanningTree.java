@@ -7,19 +7,17 @@ import java.util.logging.*;
 
 public class MinimumSpanningTree {
 
-    private Logger LOG = Logger.getLogger(MinimumSpanningTree.class.getName());
+    private Logger log = Logger.getLogger(MinimumSpanningTree.class.getName());
 
     Map<String, List<Tuple>> overlay;
     OverlayCreator oc;
-    Map<String, Integer> nodes; // make a map?
-    List<Edge> edges;
-    List<Edge> mst;
+    Map<String, Integer> nodes = new HashMap<>();
+    List<Edge> edges = new ArrayList<>();
+    List<Edge> mst = new ArrayList<>();
+    Map<String, List<String>> adjList = new HashMap<>();
 
     public MinimumSpanningTree(Map<String, List<Tuple>> overlay, OverlayCreator oc) {
         this.overlay = overlay;
-        this.nodes = new HashMap<>();
-        this.edges = new ArrayList<>();
-        this.mst = new ArrayList<>();
         this.oc = oc;
 
         for(Map.Entry<String, List<Tuple>> entry : overlay.entrySet()){
@@ -28,11 +26,12 @@ public class MinimumSpanningTree {
 
         createEdges();
         generateMST(edges, mst);
+        createAdjList();
     }
 
     public void printNodes() {
         for(Map.Entry<String, Integer> entry : nodes.entrySet()) {
-            LOG.info(entry.getKey() + ", " + entry.getValue());
+            log.info(entry.getKey() + ", " + entry.getValue());
         }
     }
 
@@ -49,13 +48,13 @@ public class MinimumSpanningTree {
 
     public void printFilteredOverlay() {
         for(Map.Entry<String, List<Tuple>> entry : filteredOverlay.entrySet()){
-            LOG.info(entry.toString());
+            log.info(entry.toString());
         }
     }
 
     public void printEdges() {
         for(Edge e : edges) {
-            LOG.info(e.toString());
+            log.info(e.toString());
         }
     }
 
@@ -91,10 +90,49 @@ public class MinimumSpanningTree {
         }
     }
 
-    public List<Edge> findPath(String start, String sink) {
-        // convert mst list to adjacency list?
-        // bfs/dfs to creat path
-        return null;
+    private void createAdjList() {
+        for(Edge edge : mst) {
+            adjList.computeIfAbsent(edge.nodeA, connectedNode -> new ArrayList<>()).add(edge.nodeB);
+            adjList.computeIfAbsent(edge.nodeB, connectedNode -> new ArrayList<>()).add(edge.nodeA);
+        }
+    }
+
+    public void printAdjList() {
+        for(Map.Entry<String, List<String>> entry : adjList.entrySet()) {
+            log.info(entry.toString());
+        }
+    }
+
+    public LinkedList<String> findPath(String source, String sink) {
+
+        Queue<String> queue = new LinkedList<>();
+        Set<String> visited = new HashSet<>();
+        Map<String,String> previous = new HashMap<>();
+        LinkedList<String> path = new LinkedList<>(); // might need to change to something else
+
+        queue.add(source);
+        visited.add(source);
+        while(!queue.isEmpty()){
+            String curr = queue.poll();
+            if(curr.equals(sink)) { break; }
+            List<String> neighbors = adjList.get(curr);
+            if(neighbors == null) { continue; }
+            for(String n : neighbors) {
+                if(!visited.contains(n)){
+                    visited.add(n);
+                    previous.put(n, curr);
+                    queue.add(n);
+                }
+            }
+        }
+        if(previous.containsKey(sink)){
+            String curr = sink;
+            while(!curr.equals(source)) {
+                path.add(0, curr);
+                curr = previous.get(curr);
+            }
+        }
+        return path;
     }
 
     public void printMST() { // need to change to BFS format later

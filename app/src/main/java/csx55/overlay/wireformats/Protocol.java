@@ -13,4 +13,5 @@ public interface Protocol {
     int TRAFFIC_SUMMARY = 9;
     int NODE_ID = 10;
     int OVERLAY = 11;
+    int PAYLOAD = 12;
 }
