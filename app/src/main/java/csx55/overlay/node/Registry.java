@@ -18,20 +18,21 @@ public class Registry implements Node {
     int port;
     ServerSocket serverSocket;
 
-    List<TCPConnection> openConnections;
+    List<TCPConnection> openConnections = new ArrayList<>();
     int connections = 0;
 
-    Set<String> registeredNodes;
-    Map<String, List<Tuple>> overlay; // grab messaging node ip and match with correct socket in openConnections
-    Map<String, List<Tuple>> connectionMap; // use for relaying who connects to who to avoid duplicate connections
+    Set<String> registeredNodes = ConcurrentHashMap.newKeySet();
+    Set<String> finishedNodes = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    Map<String, List<Tuple>> overlay;
+    Map<String, List<Tuple>> connectionMap;
+    Map<String, List<Long>> summaryReport = new ConcurrentHashMap<>();
+    Map<String, TCPConnection> connectedMessagingNodes = new ConcurrentHashMap<>();
 
     //Logging
     private Logger log = Logger.getLogger(Registry.class.getName());
 
     public Registry(int port) {
         this.port = port;
-        registeredNodes = ConcurrentHashMap.newKeySet(); // should work better using a single String?
-        openConnections =  new ArrayList<>();
     }
 
     public void onEvent(Event event, Socket socket) {
@@ -50,6 +51,9 @@ public class Registry implements Node {
                     Message successMessage = new Message(Protocol.REGISTER_RESPONSE, (byte)0, info);
                     log.info(() -> "Sending success response to messaging node at %s" + nodeEntry);
                     sender.sendData(successMessage.getBytes());
+                    // use same mapping for nodeID to TCPConnection as in MN
+                    TCPConnection conn = getConnectionBySocket(openConnections, socket);
+                    connectedMessagingNodes.put(nodeEntry, conn);
                 } else {
                     // add failure cases
                     log.info(() -> "Failure ocurred while registering node...\n\tChecking for mismatching IPs...\n\tIP in message: " + node.ip + " Socket IP: " + socketAddress);
@@ -102,10 +106,60 @@ public class Registry implements Node {
                 String nodeID = taskComplete.ip + ":" + taskComplete.port;
                 // mark node as complete
                 log.info("Received task complete message from " + nodeID);
-                log.info("Need to implement marking node as complete still...");
+                finishedNodes.add(nodeID);
+                summaryReport.put(nodeID, new ArrayList<>());
+                if(finishedNodes.size() == registeredNodes.size()) {
+                    summaryReport.put("sum", new ArrayList<>(Collections.nCopies(5, 0L)));
+                    finishedNodes.clear();
+                    try{
+                        Thread.sleep(1000);
+                    }catch(InterruptedException e) {
+                        log.warning(e.getStackTrace().toString());
+                    }
+                    sendTrafficSummaryRequest();
+                }
+            }
+            else if(event.getType() == Protocol.TRAFFIC_SUMMARY) {
+
+                TaskSummaryResponse tsr = (TaskSummaryResponse) event;
+                addToSummaryReport(tsr, socketAddress);
+
+                if(finishedNodes.size() == registeredNodes.size()) {
+                    printSummaryReport();
+                }
             }
         } catch(IOException e) {
             log.warning("Exception in registery while handling an event...");
+        }
+    }
+
+    private synchronized void addToSummaryReport(TaskSummaryResponse tsr, String socketAddress) {
+
+        String nodeID = socketAddress + ":" + tsr.serverPort;
+        summaryReport.get(nodeID).add((long) tsr.sendTracker);
+        summaryReport.get(nodeID).add((long) tsr.receiveTracker);
+        summaryReport.get(nodeID).add((long) tsr.sendSummation);
+        summaryReport.get(nodeID).add((long) tsr.receiveSummation);
+        summaryReport.get(nodeID).add((long) tsr.relayTracker);
+
+        List<Long> sum = summaryReport.get("sum");
+        sum.set(0, sum.get(0) + tsr.sendTracker);
+        sum.set(1, sum.get(1) + tsr.receiveTracker);
+        sum.set(2, sum.get(2) + tsr.sendSummation);
+        sum.set(3, sum.get(3) + tsr.receiveSummation);
+        sum.set(4, sum.get(4) + tsr.relayTracker);
+
+        finishedNodes.add(nodeID);
+    }
+
+    private void printSummaryReport() {
+        for(Map.Entry<String, List<Long>> entry : summaryReport.entrySet()){
+            if(!entry.getKey().equals("sum")) {
+                System.out.println(entry.getKey() + " " +  entry.getValue().get(0) + " " + entry.getValue().get(1) + " " + entry.getValue().get(2) + " " + entry.getValue().get(3) + " " + entry.getValue().get(4));
+            }
+        }
+        if(summaryReport.containsKey("sum")){
+            System.out.println("sum " + summaryReport.get("sum").get(0) + " " + summaryReport.get("sum").get(1) + " " + summaryReport.get("sum").get(2) + " " + summaryReport.get("sum").get(3) + " " + summaryReport.get("sum").get(4));
         }
     }
 
@@ -146,15 +200,13 @@ public class Registry implements Node {
     }
 
     public void readTerminal() {
-        try {
-            Scanner scanner = new Scanner(System.in);
+        try(Scanner scanner = new Scanner(System.in)) {
             while(true) {
                 String command = scanner.nextLine();
                 String[] splitCommand = command.split("\\s+");
                 switch (splitCommand[0]) {
                     case "exit":
                         log.info("[Registry] Closing registry node...");
-                        scanner.close();
                         System.exit(0);
                         break;
                     case "list-messaging-nodes":
@@ -184,8 +236,8 @@ public class Registry implements Node {
                         int numRounds = 0;
                         if(splitCommand.length > 1) {
                             numRounds = Integer.parseInt(splitCommand[1]);
+                            sendTaskInitiate(numRounds);
                         }
-                        sendTaskInitiate(numRounds);
                         break;
                     case "print-connections":
                         printConnections();
@@ -206,7 +258,7 @@ public class Registry implements Node {
     }
 
     private void sendTrafficSummaryRequest() throws IOException {
-        log.info("Sending request for traffic summary to messaginge nodes...");
+        log.info("Sending request for traffic summary to messaging nodes...");
         TaskSummaryRequest tsr = new TaskSummaryRequest(Protocol.PULL_TRAFFIC_SUMMARY);
         for(TCPConnection conn : openConnections) {
             conn.sender.sendData(tsr.getBytes());
@@ -241,17 +293,23 @@ public class Registry implements Node {
     public void sendConnections() throws IOException {
         log.info("Sending connections to the messaging nodes...");
         for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()) {
-            String nodeIP = entry.getKey().substring(0, entry.getKey().indexOf(":"));
+            String nodeID = entry.getKey();
+            TCPConnection conn = connectedMessagingNodes.get(nodeID);
             int numConnections = entry.getValue().size();
             List<Tuple> peers = entry.getValue();
             MessagingNodesList instructions = new MessagingNodesList(Protocol.MESSAGING_NODES_LIST, numConnections, peers);
-            for(TCPConnection conn : openConnections){
-                if(nodeIP.equals(conn.socket.getInetAddress().getHostAddress())) {
-                    conn.sender.sendData(instructions.getBytes());
-                }
-            }
+            conn.sender.sendData(instructions.getBytes());
         }
 
+    }
+
+    private TCPConnection getConnectionBySocket(List<TCPConnection> openConnections, Socket socket) {
+        for(TCPConnection conn : openConnections) {
+            if(conn.socket == socket) {
+                return conn;
+            }
+        }
+        return null;
     }
 
     public void printRegistry() {
@@ -290,7 +348,7 @@ public class Registry implements Node {
 
     public static void main(String[] args) {
 
-        LogConfig.init(Level.INFO);
+        LogConfig.init(Level.WARNING);
 
         Registry reg = new Registry(Integer.parseInt(args[0]));
         new Thread(reg::startRegistry).start();
