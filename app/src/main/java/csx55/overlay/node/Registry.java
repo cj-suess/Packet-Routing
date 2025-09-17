@@ -26,7 +26,6 @@ public class Registry implements Node {
     Map<String, List<Tuple>> overlay;
     Map<String, List<Tuple>> connectionMap;
     Map<String, List<Long>> summaryReport = new ConcurrentHashMap<>();
-    Map<String, List<Long>> finalRow = new ConcurrentHashMap<>();
 
     //Logging
     private Logger log = Logger.getLogger(Registry.class.getName());
@@ -106,32 +105,47 @@ public class Registry implements Node {
                 finishedNodes.add(nodeID);
                 summaryReport.put(nodeID, new ArrayList<>());
                 if(finishedNodes.size() == registeredNodes.size()) {
-                    finalRow.put("sum", new ArrayList<>(Collections.nCopies(5, 0L)));
-                    sendTrafficSummaryRequest();
+                    summaryReport.put("sum", new ArrayList<>(Collections.nCopies(5, 0L)));
                     finishedNodes.clear();
+                    try{
+                        Thread.sleep(1000);
+                    }catch(InterruptedException e) {
+                        log.warning(e.getStackTrace().toString());
+                    }
+                    sendTrafficSummaryRequest();
                 }
             }
             else if(event.getType() == Protocol.TRAFFIC_SUMMARY) {
 
                 TaskSummaryResponse tsr = (TaskSummaryResponse) event;
-
-                summaryReport.get(socketAddress + ":" + tsr.serverPort).add((long) tsr.sendTracker);
-                summaryReport.get(socketAddress + ":" + tsr.serverPort).add((long) tsr.receiveTracker);
-                summaryReport.get(socketAddress + ":" + tsr.serverPort).add((long) tsr.sendSummation);
-                summaryReport.get(socketAddress + ":" + tsr.serverPort).add((long) tsr.receiveSummation);
-                summaryReport.get(socketAddress + ":" + tsr.serverPort).add((long) tsr.relayTracker);
-
-                String nodeID = socketAddress + ":" + tsr.serverPort;
-                finishedNodes.add(nodeID);
+                addToSummaryReport(tsr, socketAddress);
 
                 if(finishedNodes.size() == registeredNodes.size()) {
-                    // add final row
                     printSummaryReport();
                 }
             }
         } catch(IOException e) {
             log.warning("Exception in registery while handling an event...");
         }
+    }
+
+    private synchronized void addToSummaryReport(TaskSummaryResponse tsr, String socketAddress) {
+
+        String nodeID = socketAddress + ":" + tsr.serverPort;
+        summaryReport.get(nodeID).add((long) tsr.sendTracker);
+        summaryReport.get(nodeID).add((long) tsr.receiveTracker);
+        summaryReport.get(nodeID).add((long) tsr.sendSummation);
+        summaryReport.get(nodeID).add((long) tsr.receiveSummation);
+        summaryReport.get(nodeID).add((long) tsr.relayTracker);
+
+        List<Long> sum = summaryReport.get("sum");
+        sum.set(0, sum.get(0) + tsr.sendTracker);
+        sum.set(1, sum.get(1) + tsr.receiveTracker);
+        sum.set(2, sum.get(2) + tsr.sendSummation);
+        sum.set(3, sum.get(3) + tsr.receiveSummation);
+        sum.set(4, sum.get(4) + tsr.relayTracker);
+
+        finishedNodes.add(nodeID);
     }
 
     private void printSummaryReport() {
@@ -177,15 +191,13 @@ public class Registry implements Node {
     }
 
     public void readTerminal() {
-        try {
-            Scanner scanner = new Scanner(System.in);
+        try(Scanner scanner = new Scanner(System.in)) {
             while(true) {
                 String command = scanner.nextLine();
                 String[] splitCommand = command.split("\\s+");
                 switch (splitCommand[0]) {
                     case "exit":
                         log.info("[Registry] Closing registry node...");
-                        scanner.close();
                         System.exit(0);
                         break;
                     case "list-messaging-nodes":
@@ -272,7 +284,7 @@ public class Registry implements Node {
     public void sendConnections() throws IOException {
         log.info("Sending connections to the messaging nodes...");
         for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()) {
-            String nodeIP = entry.getKey().substring(0, entry.getKey().indexOf(":"));
+            String nodeIP = entry.getKey();
             int numConnections = entry.getValue().size();
             List<Tuple> peers = entry.getValue();
             MessagingNodesList instructions = new MessagingNodesList(Protocol.MESSAGING_NODES_LIST, numConnections, peers);
@@ -321,7 +333,7 @@ public class Registry implements Node {
 
     public static void main(String[] args) {
 
-        LogConfig.init(Level.INFO);
+        LogConfig.init(Level.WARNING);
 
         Registry reg = new Registry(Integer.parseInt(args[0]));
         new Thread(reg::startRegistry).start();

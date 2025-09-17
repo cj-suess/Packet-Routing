@@ -115,10 +115,10 @@ public class EventFactory {
                     TaskSummaryResponse summaryResponse = new TaskSummaryResponse(messageType, serverPort, sendTracker, receiveTracker, sendSummation, receiveSummation, relayTracker);
                     return summaryResponse;
                 default:
-                    log.warning("Unknown protocol passed to EventFactory...");
+                    log.warning("Unknown protocol passed to EventFactory..." + messageType);
             }
         } catch(IOException e) {
-            log.info("Exception while decoding data...");
+            log.warning("Exception while decoding data..." + e.getStackTrace().toString());
         }
         return null;
     }

@@ -9,6 +9,7 @@ import java.util.*;
 import java.util.logging.*;
 import java.util.concurrent.ConcurrentHashMap;
 import csx55.overlay.spanning.MinimumSpanningTree;
+import java.util.concurrent.atomic.*;
 
 public class MessagingNode implements Node {
 
@@ -36,11 +37,11 @@ public class MessagingNode implements Node {
     private volatile MinimumSpanningTree mst;
 
     // Message tracking
-    private volatile int sendTracker = 0; 
-    private volatile int receiveTracker = 0;
-    private volatile int relayTracker = 0;
-    private volatile long sendSummation = 0;
-    private volatile long receiveSummation = 0;
+    private volatile AtomicInteger sendTracker = new AtomicInteger(0); 
+    private volatile AtomicInteger receiveTracker = new AtomicInteger(0);
+    private volatile AtomicInteger relayTracker = new AtomicInteger(0);
+    private volatile AtomicLong sendSummation = new AtomicLong(0);
+    private volatile AtomicLong receiveSummation = new AtomicLong(0);
 
     //Logging
     private volatile String nodeID = "NO ID";
@@ -88,26 +89,13 @@ public class MessagingNode implements Node {
         else if(event.getType() == Protocol.TASK_INITIATE){
             TaskInitiate ti = (TaskInitiate) event;
             log.info("Received task initiate from Registry with " + ti.numRounds + " rounds...");
-            // put on thread and wait for it to finish before informing Regsitry
-            Thread messagingThread = new Thread(() -> {
-                sendMessages(ti.numRounds);
-            });
-            messagingThread.start();
-            try {
-                messagingThread.join();
-                log.info("Messaging thread has finished...");
-                TaskComplete tc = new TaskComplete(Protocol.TASK_COMPLETE, registrySocket.getLocalAddress().getHostAddress(), serverPort);
-                registrySender.sendData(tc.getBytes());
-            } catch(InterruptedException ie) {
-                log.warning("InterruptedException while informing registry that all messages have been sent..." + ie.getMessage());
-            } catch(IOException ioe) {
-                log.warning("IOException while informing registry that all messages have been sent..." + ioe.getMessage());
-            }
+            sendMessages(ti.numRounds);
+            sendTaskComplete();
         }
         else if(event.getType() == Protocol.PULL_TRAFFIC_SUMMARY) {
             try {
                 log.info("Received task summary request from Registry. Sending back requested information...");
-                TaskSummaryResponse response = new TaskSummaryResponse(Protocol.TRAFFIC_SUMMARY, serverPort, sendTracker, receiveTracker, sendSummation, receiveSummation, relayTracker);
+                TaskSummaryResponse response = new TaskSummaryResponse(Protocol.TRAFFIC_SUMMARY, serverPort, sendTracker.get(), receiveTracker.get(), sendSummation.get(), receiveSummation.get(), relayTracker.get());
                 registrySender.sendData(response.getBytes());
             } catch(IOException e) {
                 log.warning("Exception while sending TaskSummaryReport to Registry...." + e.getMessage());
@@ -123,12 +111,12 @@ public class MessagingNode implements Node {
         try {
             incoming.path.poll(); // consume self first?
             if(incoming.path.isEmpty()) {
-                receiveSummation += incoming.payload;
-                receiveTracker++;
+                receiveSummation.addAndGet(incoming.payload);
+                receiveTracker.getAndIncrement();
             } else {
                 Payload outgoing = new Payload(Protocol.PAYLOAD, incoming.payload, incoming.path);
                 openConnections.get(incoming.path.peek()).sender.sendData(outgoing.getBytes());
-                relayTracker++;
+                relayTracker.getAndIncrement();
             }
         } catch(IOException e) {
             log.warning("Exception while processing payload..." + e.getMessage());
@@ -140,14 +128,17 @@ public class MessagingNode implements Node {
             // convert to list to get random node
             List<String> keys = new ArrayList<>(overlay.keySet());
             keys.remove(nodeID); // remove self
+            Random rand = new Random();
             for(int i = 0; i < numRounds; i++) {
-                int randNum = new Random().nextInt();
-                String randNode = keys.get(new Random().nextInt(keys.size()));
-                LinkedList<String> path = mst.findPath(nodeID, randNode); // might need to change to something else
-                Payload payload = new Payload(Protocol.PAYLOAD, randNum, path);
-                openConnections.get(path.peek()).sender.sendData(payload.getBytes());
-                sendSummation += randNum;
-                sendTracker++;
+                for(int j = 0; j < 5; j++) {
+                    int randNum = rand.nextInt();
+                    String randNode = keys.get(rand.nextInt(keys.size()));
+                    LinkedList<String> path = mst.findPath(nodeID, randNode); // might need to change to something else
+                    Payload payload = new Payload(Protocol.PAYLOAD, randNum, path);
+                    openConnections.get(path.peek()).sender.sendData(payload.getBytes());
+                    sendSummation.addAndGet(randNum);
+                    sendTracker.getAndIncrement();
+                }
             }
         } catch(IOException e) {
             log.warning("Exception while sending a message ocurred..." + e.getMessage());
@@ -221,38 +212,39 @@ public class MessagingNode implements Node {
     }
 
     private void readTerminal() {
-        Scanner scanner = new Scanner(System.in);
-        while(true) {
-            String command = scanner.nextLine();
-            switch (command) {
-                case "exit-overlay":
-                    if(registered) { deregister(); }
-                    System.out.println("exited overlay");
-                    break;
-                case "register":
-                    register();
-                    break;
-                case "deregister":
-                    deregister();
-                    break;
-                case "print-connections":
-                    printConnectionList();
-                    break;
-                case "print-overlay":
-                    printOverlay();
-                    break;
-                case "print-mst":
-                    OverlayCreator oc = new OverlayCreator();
-                    mst = new MinimumSpanningTree(overlay, oc);
-                    mst.printMST();
-                    break;
-                case "print-data":
-                    printData();
-                    break;
-                default:
-                    break;
+        try(Scanner scanner = new Scanner(System.in)) {
+            while(true) {
+                String command = scanner.nextLine();
+                switch (command) {
+                    case "exit-overlay":
+                        if(registered) { deregister(); }
+                        System.out.println("exited overlay");
+                        break;
+                    case "register":
+                        register();
+                        break;
+                    case "deregister":
+                        deregister();
+                        break;
+                    case "print-connections":
+                        printConnectionList();
+                        break;
+                    case "print-overlay":
+                        printOverlay();
+                        break;
+                    case "print-mst":
+                        OverlayCreator oc = new OverlayCreator();
+                        mst = new MinimumSpanningTree(overlay, oc);
+                        mst.printMST();
+                        break;
+                    case "print-data":
+                        printData();
+                        break;
+                    default:
+                        break;
+                }
             }
-        }
+        } 
     }
 
     private void printData() {
@@ -300,7 +292,7 @@ public class MessagingNode implements Node {
 
     public static void main(String[] args) {
 
-        LogConfig.init(Level.INFO);
+        LogConfig.init(Level.WARNING);
 
         MessagingNode node = new MessagingNode(args[0], Integer.parseInt(args[1]));
         new Thread(node::startNode, "Node-" + node.nodeID + "-Server").start();
