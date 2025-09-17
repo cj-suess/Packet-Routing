@@ -26,6 +26,7 @@ public class Registry implements Node {
     Map<String, List<Tuple>> overlay;
     Map<String, List<Tuple>> connectionMap;
     Map<String, List<Long>> summaryReport = new ConcurrentHashMap<>();
+    Map<String, TCPConnection> connectedMessagingNodes = new ConcurrentHashMap<>();
 
     //Logging
     private Logger log = Logger.getLogger(Registry.class.getName());
@@ -50,6 +51,9 @@ public class Registry implements Node {
                     Message successMessage = new Message(Protocol.REGISTER_RESPONSE, (byte)0, info);
                     log.info(() -> "Sending success response to messaging node at %s" + nodeEntry);
                     sender.sendData(successMessage.getBytes());
+                    // use same mapping for nodeID to TCPConnection as in MN
+                    TCPConnection conn = getConnectionBySocket(openConnections, socket);
+                    connectedMessagingNodes.put(nodeEntry, conn);
                 } else {
                     // add failure cases
                     log.info(() -> "Failure ocurred while registering node...\n\tChecking for mismatching IPs...\n\tIP in message: " + node.ip + " Socket IP: " + socketAddress);
@@ -150,7 +154,12 @@ public class Registry implements Node {
 
     private void printSummaryReport() {
         for(Map.Entry<String, List<Long>> entry : summaryReport.entrySet()){
-            System.out.println(entry);
+            if(entry.getKey() != "sum") {
+                System.out.println(entry);
+            }
+        }
+        if(summaryReport.containsKey("sum")){
+            System.out.println("sum " + summaryReport.get("sum"));
         }
     }
 
@@ -284,17 +293,23 @@ public class Registry implements Node {
     public void sendConnections() throws IOException {
         log.info("Sending connections to the messaging nodes...");
         for(Map.Entry<String, List<Tuple>> entry : connectionMap.entrySet()) {
-            String nodeIP = entry.getKey();
+            String nodeID = entry.getKey();
+            TCPConnection conn = connectedMessagingNodes.get(nodeID);
             int numConnections = entry.getValue().size();
             List<Tuple> peers = entry.getValue();
             MessagingNodesList instructions = new MessagingNodesList(Protocol.MESSAGING_NODES_LIST, numConnections, peers);
-            for(TCPConnection conn : openConnections){
-                if(nodeIP.equals(conn.socket.getInetAddress().getHostAddress())) {
-                    conn.sender.sendData(instructions.getBytes());
-                }
-            }
+            conn.sender.sendData(instructions.getBytes());
         }
 
+    }
+
+    private TCPConnection getConnectionBySocket(List<TCPConnection> openConnections, Socket socket) {
+        for(TCPConnection conn : openConnections) {
+            if(conn.socket == socket) {
+                return conn;
+            }
+        }
+        return null;
     }
 
     public void printRegistry() {
