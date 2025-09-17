@@ -154,12 +154,12 @@ public class Registry implements Node {
 
     private void printSummaryReport() {
         for(Map.Entry<String, List<Long>> entry : summaryReport.entrySet()){
-            if(entry.getKey() != "sum") {
-                System.out.println(entry);
+            if(!entry.getKey().equals("sum")) {
+                System.out.println(entry.getKey() + " " +  entry.getValue().get(0) + " " + entry.getValue().get(1) + " " + entry.getValue().get(2) + " " + entry.getValue().get(3) + " " + entry.getValue().get(4));
             }
         }
         if(summaryReport.containsKey("sum")){
-            System.out.println("sum " + summaryReport.get("sum"));
+            System.out.println("sum " + summaryReport.get("sum").get(0) + " " + summaryReport.get("sum").get(1) + " " + summaryReport.get("sum").get(2) + " " + summaryReport.get("sum").get(3) + " " + summaryReport.get("sum").get(4));
         }
     }
 
